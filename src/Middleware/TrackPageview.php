@@ -10,7 +10,7 @@ use LaBoiteACode\WebAnalytics\Client;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Pageview serveur automatique — imblocable par les adblockers, zéro JS.
+ * Pageview serveur automatique : imblocable par les adblockers, zéro JS.
  * L'envoi a lieu dans terminate(), après l'envoi de la réponse au visiteur :
  * aucun impact sur la latence perçue.
  *

@@ -13,8 +13,8 @@ use Orchestra\Testbench\TestCase;
 
 /**
  * Le pont testé comme un vrai projet Laravel (Testbench) : provider, config,
- * middleware `webanalytics` en terminate(), facade — contre un serveur de
- * capture HTTP réel (celui du package cœur, via le symlink du path repo).
+ * middleware `webanalytics` en terminate(), facade, le tout contre un serveur
+ * de capture HTTP réel (celui du package cœur, via le symlink du path repo).
  */
 final class BridgeTest extends TestCase
 {
