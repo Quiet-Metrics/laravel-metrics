@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace LaBoiteACode\WebAnalytics\Laravel;
+namespace QuietMetrics\Laravel;
 
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
-use LaBoiteACode\WebAnalytics\Client;
-use LaBoiteACode\WebAnalytics\Laravel\Middleware\TrackPageview;
+use QuietMetrics\Client;
+use QuietMetrics\Laravel\Middleware\TrackPageview;
 
-final class WebAnalyticsServiceProvider extends ServiceProvider
+final class QuietMetricsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/webanalytics.php', 'webanalytics');
+        $this->mergeConfigFrom(__DIR__ . '/../config/quiet-metrics.php', 'quiet-metrics');
 
         $this->app->singleton(Client::class, static function (Application $app): Client {
             /** @var array{public_key:?string,secret_key:?string,endpoint:string,trust_proxy_headers:bool} $config */
-            $config = $app['config']['webanalytics'];
+            $config = $app['config']['quiet-metrics'];
 
             return new Client((string) $config['public_key'], $config['secret_key'], [
                 'endpoint' => $config['endpoint'],
@@ -29,10 +29,10 @@ final class WebAnalyticsServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->publishes([
-            __DIR__ . '/../config/webanalytics.php' => config_path('webanalytics.php'),
-        ], 'webanalytics-config');
+            __DIR__ . '/../config/quiet-metrics.php' => config_path('webanalytics.php'),
+        ], 'quiet-metrics-config');
 
-        // Route::middleware('webanalytics') → pageviews serveur automatiques.
-        $this->app['router']->aliasMiddleware('webanalytics', TrackPageview::class);
+        // Route::middleware('quiet-metrics') → pageviews serveur automatiques.
+        $this->app['router']->aliasMiddleware('quiet-metrics', TrackPageview::class);
     }
 }

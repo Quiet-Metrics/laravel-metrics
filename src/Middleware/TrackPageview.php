@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace LaBoiteACode\WebAnalytics\Laravel\Middleware;
+namespace QuietMetrics\Laravel\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use LaBoiteACode\WebAnalytics\Client;
+use QuietMetrics\Client;
 use Symfony\Component\HttpFoundation\Response;
 
 /**

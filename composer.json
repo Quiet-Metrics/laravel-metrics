@@ -1,6 +1,6 @@
 {
-    "name": "laboiteacode/webanalytics-laravel",
-    "description": "Pont Laravel du SDK Affluence (laboiteacode/webanalytics-php) : pageviews serveur automatiques (middleware), facade et configuration.",
+    "name": "quiet-metrics/laravel-metrics",
+    "description": "Pont Laravel du SDK Quiet Metrics (quiet-metrics/php-metrics) : pageviews serveur automatiques (middleware), facade et configuration.",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -13,21 +13,21 @@
     ],
     "require": {
         "php": ">=8.1",
-        "laboiteacode/webanalytics-php": "^1.0@dev",
+        "quiet-metrics/php-metrics": "^1.0@dev",
         "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0"
     },
     "autoload": {
         "psr-4": {
-            "LaBoiteACode\\WebAnalytics\\Laravel\\": "src/"
+            "QuietMetrics\\Laravel\\": "src/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "LaBoiteACode\\WebAnalytics\\Laravel\\WebAnalyticsServiceProvider"
+                "QuietMetrics\\Laravel\\QuietMetricsServiceProvider"
             ],
             "aliases": {
-                "WebAnalytics": "LaBoiteACode\\WebAnalytics\\Laravel\\Facades\\WebAnalytics"
+                "QuietMetrics": "QuietMetrics\\Laravel\\Facades\\QuietMetrics"
             }
         }
     },
@@ -49,7 +49,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "LaBoiteACode\\WebAnalytics\\Laravel\\Tests\\": "tests/"
+            "QuietMetrics\\Laravel\\Tests\\": "tests/"
         }
     },
     "scripts": {

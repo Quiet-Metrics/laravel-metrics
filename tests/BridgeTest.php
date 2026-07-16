@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace LaBoiteACode\WebAnalytics\Laravel\Tests;
+namespace QuietMetrics\Laravel\Tests;
 
 use Illuminate\Support\Facades\Route;
-use LaBoiteACode\WebAnalytics\Client;
-use LaBoiteACode\WebAnalytics\Laravel\Facades\WebAnalytics;
-use LaBoiteACode\WebAnalytics\Laravel\WebAnalyticsServiceProvider;
-use LaBoiteACode\WebAnalytics\Tests\CaptureServer;
+use QuietMetrics\Client;
+use QuietMetrics\Laravel\Facades\QuietMetrics;
+use QuietMetrics\Laravel\QuietMetricsServiceProvider;
+use QuietMetrics\Tests\CaptureServer;
 use Orchestra\Testbench\TestCase;
 
 /**
  * Le pont testé comme un vrai projet Laravel (Testbench) : provider, config,
- * middleware `webanalytics` en terminate(), facade, le tout contre un serveur
+ * middleware `quiet-metrics` en terminate(), facade, le tout contre un serveur
  * de capture HTTP réel (celui du package cœur, via le symlink du path repo).
  */
 final class BridgeTest extends TestCase
@@ -22,7 +22,7 @@ final class BridgeTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
-        require_once __DIR__.'/../vendor/laboiteacode/webanalytics-php/tests/CaptureServer.php';
+        require_once __DIR__.'/../vendor/quiet-metrics/php-metrics/tests/CaptureServer.php';
         self::$server = new CaptureServer();
         self::$server->start();
     }
@@ -40,20 +40,20 @@ final class BridgeTest extends TestCase
 
     protected function getPackageProviders($app): array
     {
-        return [WebAnalyticsServiceProvider::class];
+        return [QuietMetricsServiceProvider::class];
     }
 
     protected function defineEnvironment($app): void
     {
-        $app['config']->set('webanalytics.public_key', 'wa_pub_test');
-        $app['config']->set('webanalytics.secret_key', 'wa_sec_test');
-        $app['config']->set('webanalytics.endpoint', self::$server->endpoint());
-        $app['config']->set('webanalytics.trust_proxy_headers', false);
+        $app['config']->set('quiet-metrics.public_key', 'qm_pub_test');
+        $app['config']->set('quiet-metrics.secret_key', 'qm_sec_test');
+        $app['config']->set('quiet-metrics.endpoint', self::$server->endpoint());
+        $app['config']->set('quiet-metrics.trust_proxy_headers', false);
     }
 
     public function test_le_middleware_envoie_une_pageview_signee_apres_la_reponse(): void
     {
-        Route::middleware('webanalytics')->get('/tarifs', fn () => response('ok'));
+        Route::middleware('quiet-metrics')->get('/tarifs', fn () => response('ok'));
 
         $this->get('/tarifs', ['User-Agent' => 'NavigateurTest/1.0'])->assertOk();
 
@@ -61,24 +61,24 @@ final class BridgeTest extends TestCase
         $this->assertCount(1, $requests);
 
         $payload = json_decode($requests[0]['body'], true);
-        $this->assertSame('wa_pub_test', $payload['k']);
+        $this->assertSame('qm_pub_test', $payload['k']);
         $this->assertSame('pageview', $payload['t']);
         $this->assertStringEndsWith('/tarifs', $payload['u']);
         $this->assertSame('NavigateurTest/1.0', $payload['ua']);
 
         // Signature HMAC valide : le serveur de collecte honorera ip/ua/ts.
-        $timestamp = $requests[0]['headers']['x-wa-timestamp'];
+        $timestamp = $requests[0]['headers']['x-qm-timestamp'];
         $this->assertSame(
-            hash_hmac('sha256', $timestamp.'.'.$requests[0]['body'], 'wa_sec_test'),
-            $requests[0]['headers']['x-wa-signature'],
+            hash_hmac('sha256', $timestamp.'.'.$requests[0]['body'], 'qm_sec_test'),
+            $requests[0]['headers']['x-qm-signature'],
         );
     }
 
     public function test_le_middleware_ignore_json_erreurs_et_non_get(): void
     {
-        Route::middleware('webanalytics')->get('/api-like', fn () => response('ok'));
-        Route::middleware('webanalytics')->post('/form', fn () => response('ok'));
-        Route::middleware('webanalytics')->get('/introuvable', fn () => response('non', 404));
+        Route::middleware('quiet-metrics')->get('/api-like', fn () => response('ok'));
+        Route::middleware('quiet-metrics')->post('/form', fn () => response('ok'));
+        Route::middleware('quiet-metrics')->get('/introuvable', fn () => response('non', 404));
 
         $this->getJson('/api-like')->assertOk();          // attend du JSON → ignoré
         $this->post('/form')->assertOk();                 // non-GET → ignoré
@@ -89,7 +89,7 @@ final class BridgeTest extends TestCase
 
     public function test_la_facade_envoie_un_evenement(): void
     {
-        WebAnalytics::event('inscription', ['plan' => 'pro'], ['url' => 'https://monsite.fr/register']);
+        QuietMetrics::event('inscription', ['plan' => 'pro'], ['url' => 'https://monsite.fr/register']);
 
         $payload = json_decode(self::$server->requests()[0]['body'], true);
         $this->assertSame('event', $payload['t']);
