@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace QuietMetrics\Laravel\Tests;
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
 use QuietMetrics\Client;
 use QuietMetrics\Laravel\Facades\QuietMetrics;
 use QuietMetrics\Laravel\QuietMetricsServiceProvider;
@@ -104,8 +105,8 @@ final class BridgeTest extends TestCase
 
     public function test_la_config_est_publiee_sous_le_nom_que_le_provider_relit(): void
     {
-        $chemins = \Illuminate\Support\ServiceProvider::pathsToPublish(
-            \QuietMetrics\Laravel\QuietMetricsServiceProvider::class,
+        $chemins = ServiceProvider::pathsToPublish(
+            QuietMetricsServiceProvider::class,
             'quiet-metrics-config',
         );
 
