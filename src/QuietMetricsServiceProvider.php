@@ -29,7 +29,7 @@ final class QuietMetricsServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->publishes([
-            __DIR__ . '/../config/quiet-metrics.php' => config_path('webanalytics.php'),
+            __DIR__ . '/../config/quiet-metrics.php' => config_path('quiet-metrics.php'),
         ], 'quiet-metrics-config');
 
         // Route::middleware('quiet-metrics') → pageviews serveur automatiques.

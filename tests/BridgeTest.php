@@ -101,4 +101,22 @@ final class BridgeTest extends TestCase
     {
         $this->assertSame($this->app->make(Client::class), $this->app->make(Client::class));
     }
+
+    public function test_la_config_est_publiee_sous_le_nom_que_le_provider_relit(): void
+    {
+        $chemins = \Illuminate\Support\ServiceProvider::pathsToPublish(
+            \QuietMetrics\Laravel\QuietMetricsServiceProvider::class,
+            'quiet-metrics-config',
+        );
+
+        $this->assertNotEmpty($chemins, 'le tag de publication quiet-metrics-config a disparu');
+
+        foreach ($chemins as $destination) {
+            $this->assertSame(
+                'quiet-metrics.php',
+                basename($destination),
+                'la config publiee doit porter le nom de la cle relue par register() (quiet-metrics), sinon l edition de l utilisateur reste sans effet',
+            );
+        }
+    }
 }
