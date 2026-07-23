@@ -24,8 +24,10 @@ Avant la publication sur Packagist (bêta privée), installez depuis les **deux*
 ```
 
 ```bash
-composer require quiet-metrics/laravel-metrics:@dev
+composer require quiet-metrics/laravel-metrics:^1.0
 ```
+
+(Les deux dépôts sont tagués : la contrainte stable suffit, pas besoin de `@dev`.)
 
 ## Configuration
 
