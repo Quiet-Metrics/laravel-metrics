@@ -1,6 +1,6 @@
 # quiet-metrics/laravel-metrics
 
-Pont Laravel de [Quiet Metrics](https://app.quietmetrics.dev) (La Boîte à Code) : pageviews serveur automatiques via middleware, facade pour les événements, configuration publiable. Le tracking se fait à 100 % côté serveur, sans cookie, sans JS, invisible pour les adblockers. Repose sur le [package cœur PHP](../php) (`quiet-metrics/php-metrics`).
+Pont Laravel de [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code) : pageviews serveur automatiques via middleware, facade pour les événements, configuration publiable. Le tracking se fait à 100 % côté serveur, sans cookie, sans JS, invisible pour les adblockers. Repose sur le [package cœur PHP](../php) (`quiet-metrics/php-metrics`).
 
 Compatible Laravel 10 à 13 (illuminate/support ^10 || ^11 || ^12 || ^13), PHP >= 8.1.
 
@@ -40,12 +40,13 @@ Variables d'environnement :
 ```dotenv
 # Clés du site, panneau « Installation » du tableau de bord Quiet Metrics.
 QUIET_METRICS_PUBLIC_KEY=qm_pub_xxxx
-# Optionnelle mais recommandée : active le mode signé (HMAC), l'IP/UA
-# du visiteur transmis par votre serveur font alors foi.
+# INDISPENSABLE en envoi serveur : active le mode signé (HMAC), seul cas où
+# l'IP/UA du visiteur transmis par votre serveur font foi. Sans elle, tous
+# les hits porteraient l'IP de votre serveur : un seul visiteur compté.
 QUIET_METRICS_SECRET_KEY=qm_sec_xxxx
 
 # Facultatives :
-QUIET_METRICS_ENDPOINT=https://app.quietmetrics.dev/api/v1/collect
+QUIET_METRICS_ENDPOINT=https://quietmetrics.dev/api/v1/collect
 QUIET_METRICS_TRUST_PROXY=false   # true si l'app est derrière un reverse proxy / CDN
 ```
 
