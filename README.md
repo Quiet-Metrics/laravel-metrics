@@ -1,8 +1,12 @@
 # quiet-metrics/laravel-metrics
 
-Pont Laravel de [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code) : pageviews serveur automatiques via middleware, facade pour les événements, configuration publiable. Le tracking se fait à 100 % côté serveur, sans cookie, sans JS, invisible pour les adblockers. Repose sur le [package cœur PHP](../php) (`quiet-metrics/php-metrics`).
+![Quiet Metrics: Laravel bridge](art/banner.png)
 
-Compatible Laravel 10 à 13 (illuminate/support ^10 || ^11 || ^12 || ^13), PHP >= 8.1.
+> 🇫🇷 [Version française](README.fr.md)
+
+Laravel bridge for [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code): automatic server-side pageviews via middleware, a facade for events, publishable configuration. Tracking is 100% server-side, cookie-free, JS-free, invisible to ad blockers. Built on the [core PHP package](https://github.com/Quiet-Metrics/php-metrics) (`quiet-metrics/php-metrics`).
+
+Compatible with Laravel 10 to 13 (illuminate/support ^10 || ^11 || ^12 || ^13), PHP >= 8.1.
 
 ## Installation
 
@@ -10,9 +14,9 @@ Compatible Laravel 10 à 13 (illuminate/support ^10 || ^11 || ^12 || ^13), PHP >
 composer require quiet-metrics/laravel-metrics
 ```
 
-Le service provider et l'alias de facade sont enregistrés automatiquement (package discovery).
+The service provider and the facade alias are registered automatically (package discovery).
 
-Avant la publication sur Packagist (bêta privée), installez depuis les **deux** dépôts GitHub (accès requis), le pont dépend du cœur :
+Before the Packagist release (private beta), install from **both** GitHub repositories (access required), as the bridge depends on the core:
 
 ```json
 {
@@ -27,44 +31,44 @@ Avant la publication sur Packagist (bêta privée), installez depuis les **deux*
 composer require quiet-metrics/laravel-metrics:^1.0
 ```
 
-(Les deux dépôts sont tagués : la contrainte stable suffit, pas besoin de `@dev`.)
+(Both repositories are tagged: the stable constraint is enough, no need for `@dev`.)
 
 ## Configuration
 
-Publiez le fichier de configuration (optionnel, les variables d'environnement suffisent dans la plupart des cas) :
+Publish the configuration file (optional; environment variables are enough in most cases):
 
 ```bash
 php artisan vendor:publish --tag=quiet-metrics-config
 ```
 
-Variables d'environnement :
+Environment variables:
 
 ```dotenv
-# Clés du site, panneau « Installation » du tableau de bord Quiet Metrics.
+# Site keys, from the "Installation" panel of the Quiet Metrics dashboard.
 QUIET_METRICS_PUBLIC_KEY=qm_pub_xxxx
-# INDISPENSABLE en envoi serveur : active le mode signé (HMAC), seul cas où
-# l'IP/UA du visiteur transmis par votre serveur font foi. Sans elle, tous
-# les hits porteraient l'IP de votre serveur : un seul visiteur compté.
+# ESSENTIAL for server-side sending: enables signed mode (HMAC), the only
+# case where the visitor IP/UA carried by your server are trusted. Without
+# it, every hit would carry your server's IP: a single visitor counted.
 QUIET_METRICS_SECRET_KEY=qm_sec_xxxx
 
-# Facultatives :
+# Optional:
 QUIET_METRICS_ENDPOINT=https://quietmetrics.dev/api/v1/collect
-QUIET_METRICS_TRUST_PROXY=false   # true si l'app est derrière un reverse proxy / CDN
+QUIET_METRICS_TRUST_PROXY=false   # true if the app sits behind a reverse proxy / CDN
 ```
 
 ## Usage
 
-### Middleware : pageviews automatiques
+### Middleware: automatic pageviews
 
-Le middleware est enregistré sous l'alias `quiet-metrics`. Par route ou par groupe :
+The middleware is registered under the `quiet-metrics` alias. Per route or per group:
 
 ```php
 Route::middleware('quiet-metrics')->group(function () {
-    // ... vos routes web
+    // ... your web routes
 });
 ```
 
-En global sur tout le groupe web, Laravel 11+ (`bootstrap/app.php`) :
+Globally on the whole web group, Laravel 11+ (`bootstrap/app.php`):
 
 ```php
 use QuietMetrics\Laravel\Middleware\TrackPageview;
@@ -74,7 +78,7 @@ use QuietMetrics\Laravel\Middleware\TrackPageview;
 })
 ```
 
-Laravel 10 (`app/Http/Kernel.php`) :
+Laravel 10 (`app/Http/Kernel.php`):
 
 ```php
 protected $middlewareGroups = [
@@ -85,26 +89,26 @@ protected $middlewareGroups = [
 ];
 ```
 
-Le middleware ne compte que les `GET` HTML réussis : les requêtes non GET, les réponses non 2xx et les requêtes AJAX/JSON sont ignorées.
+The middleware only counts successful HTML `GET`s: non-GET requests, non-2xx responses and AJAX/JSON requests are ignored.
 
-### Facade : événements personnalisés
+### Facade: custom events
 
 ```php
 use QuietMetrics\Laravel\Facades\QuietMetrics;
 
-// Événement avec propriétés (valeurs scalaires, 30 clés max).
-QuietMetrics::event('inscription', ['plan' => 'pro']);
+// Event with properties (scalar values, 30 keys max).
+QuietMetrics::event('signup', ['plan' => 'pro']);
 
-// Pageview manuelle, contexte surchargeable (utile hors requête HTTP :
-// jobs, commandes artisan ; `url` est alors obligatoire).
-QuietMetrics::pageview(['url' => 'https://monsite.fr/tarifs']);
+// Manual pageview, overridable context (useful outside HTTP requests:
+// jobs, artisan commands; `url` is then required).
+QuietMetrics::pageview(['url' => 'https://mysite.com/pricing']);
 ```
 
-Vous pouvez aussi injecter directement `QuietMetrics\Client` (enregistré en singleton) plutôt que passer par la facade.
+You can also inject `QuietMetrics\Client` directly (registered as a singleton) instead of going through the facade.
 
-## Comment ça marche
+## How it works
 
-Le provider construit un singleton `Client` (package cœur) à partir de la config `quiet-metrics`. Le middleware envoie la pageview dans `terminate()`, après l'envoi de la réponse au visiteur : aucun impact sur la latence perçue. Le contexte (URL, referrer, IP, User-Agent, langue) vient de l'objet `Request` et non des superglobales : correct sous Octane et workers persistants, dans les tests, et aligné sur les trusted proxies de l'application hôte. Côté cœur, l'envoi est non bloquant (socket fire-and-forget, repli cURL court) et tout échec est silencieux : l'analytics ne casse jamais le site.
+The provider builds a `Client` singleton (core package) from the `quiet-metrics` config. The middleware sends the pageview in `terminate()`, after the response has been sent to the visitor: no impact on perceived latency. The context (URL, referrer, IP, User-Agent, language) comes from the `Request` object, never from superglobals: correct under Octane and persistent workers, in tests, and aligned with the host application's trusted proxies. On the core side, sending is non-blocking (fire-and-forget socket, short cURL fallback) and every failure is silent: analytics never breaks the site.
 
 ## Tests
 
@@ -112,8 +116,8 @@ Le provider construit un singleton `Client` (package cœur) à partir de la conf
 composer update && composer test
 ```
 
-Suite Orchestra Testbench contre le serveur de capture HTTP du package cœur : pageview middleware signée (HMAC vérifiée), exclusions (JSON, POST, erreurs), facade `event`, singleton configuré.
+Orchestra Testbench suite against the core package's HTTP capture server: signed middleware pageview (HMAC verified), exclusions (JSON, POST, errors), `event` facade, configured singleton.
 
-## Licence
+## License
 
 MIT.
