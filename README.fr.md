@@ -28,7 +28,7 @@ Avant la publication sur Packagist (bêta privée), installez depuis les **deux*
 ```
 
 ```bash
-composer require quiet-metrics/laravel-metrics:^1.0
+composer require quiet-metrics/laravel-metrics:^0.1
 ```
 
 (Les deux dépôts sont tagués : la contrainte stable suffit, pas besoin de `@dev`.)
@@ -120,4 +120,4 @@ Suite Orchestra Testbench contre le serveur de capture HTTP du package cœur : p
 
 ## Licence
 
-MIT.
+MIT. Un produit [La Boîte à Code](https://laboiteacode.fr) pour [Quiet Metrics](https://quietmetrics.dev).

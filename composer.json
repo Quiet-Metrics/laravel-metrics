@@ -3,6 +3,17 @@
     "description": "Pont Laravel du SDK Quiet Metrics (quiet-metrics/php-metrics) : pageviews serveur automatiques (middleware), facade et configuration.",
     "type": "library",
     "license": "MIT",
+    "homepage": "https://quietmetrics.dev",
+    "authors": [
+        {
+            "name": "Alexandre Ribes (La Boîte à Code)",
+            "homepage": "https://laboiteacode.fr"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/Quiet-Metrics/laravel-metrics/issues",
+        "source": "https://github.com/Quiet-Metrics/laravel-metrics"
+    },
     "keywords": [
         "analytics",
         "laravel",
@@ -13,7 +24,7 @@
     ],
     "require": {
         "php": ">=8.1",
-        "quiet-metrics/php-metrics": "^1.0",
+        "quiet-metrics/php-metrics": "^0.1",
         "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0"
     },
     "autoload": {
