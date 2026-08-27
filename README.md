@@ -16,7 +16,7 @@ composer require quiet-metrics/laravel-metrics
 
 The service provider and the facade alias are registered automatically (package discovery).
 
-Before the Packagist release (private beta), install from **both** GitHub repositories (access required), as the bridge depends on the core:
+Before the Packagist release, install from **both** GitHub repositories, as the bridge depends on the core:
 
 ```json
 {

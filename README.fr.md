@@ -16,7 +16,7 @@ composer require quiet-metrics/laravel-metrics
 
 Le service provider et l'alias de facade sont enregistrés automatiquement (package discovery).
 
-Avant la publication sur Packagist (bêta privée), installez depuis les **deux** dépôts GitHub (accès requis), le pont dépend du cœur :
+Avant la publication sur Packagist, installez depuis les **deux** dépôts GitHub, le pont dépend du cœur :
 
 ```json
 {

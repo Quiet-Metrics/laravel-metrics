@@ -5,6 +5,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [S
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-27
+
+Documentation and artwork only. The bridge code is unchanged since 0.1.0.
+
+### Changed
+- Banner redrawn to the current brand: product typefaces, the damped wave, title in ink.
+- README: the pre-Packagist install note no longer says that access to the repositories is required. Both are public.
+
+### Fixed
+- The development `repositories` entry now pins a resolvable version of the core package.
+
 ## [0.1.0] - 2026-07-24
 
 First tagged release (private beta), after a full pre-publication review.
