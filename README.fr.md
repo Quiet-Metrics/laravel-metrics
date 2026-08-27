@@ -16,23 +16,6 @@ composer require quiet-metrics/laravel-metrics
 
 Le service provider et l'alias de facade sont enregistrés automatiquement (package discovery).
 
-Avant la publication sur Packagist, installez depuis les **deux** dépôts GitHub, le pont dépend du cœur :
-
-```json
-{
-    "repositories": [
-        { "type": "vcs", "url": "https://github.com/Quiet-Metrics/php-metrics" },
-        { "type": "vcs", "url": "https://github.com/Quiet-Metrics/laravel-metrics" }
-    ]
-}
-```
-
-```bash
-composer require quiet-metrics/laravel-metrics:^0.1
-```
-
-(Les deux dépôts sont tagués : la contrainte stable suffit, pas besoin de `@dev`.)
-
 ## Configuration
 
 Publiez le fichier de configuration (optionnel, les variables d'environnement suffisent dans la plupart des cas) :
