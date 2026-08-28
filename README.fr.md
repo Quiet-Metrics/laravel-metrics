@@ -4,7 +4,7 @@
 
 > 🇬🇧 [English version](README.md)
 
-Pont Laravel de [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code) : pageviews serveur automatiques via middleware, facade pour les événements, configuration publiable. Le tracking se fait à 100 % côté serveur, sans cookie, sans JS, invisible pour les adblockers. Repose sur le [package cœur PHP](https://github.com/Quiet-Metrics/php-metrics) (`quiet-metrics/php-metrics`).
+Pont Laravel de [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code) : pageviews serveur automatiques via middleware, facade pour les événements, configuration publiable. Le tracking se fait à 100 % côté serveur, sans JS et sans cookie d'identification ni de traçabilité, invisible pour les adblockers. Repose sur le [package cœur PHP](https://github.com/Quiet-Metrics/php-metrics) (`quiet-metrics/php-metrics`).
 
 Compatible Laravel 10 à 13 (illuminate/support ^10 || ^11 || ^12 || ^13), PHP >= 8.1.
 
@@ -88,6 +88,19 @@ QuietMetrics::pageview(['url' => 'https://monsite.fr/tarifs']);
 ```
 
 Vous pouvez aussi injecter directement `QuietMetrics\Client` (enregistré en singleton) plutôt que passer par la facade.
+
+## S'exclure de la mesure
+
+Un visiteur peut demander à ne plus être compté, sans compte et sans écrire à personne : il visite une page de votre site avec `?qm_ignore=1`, et `?qm_ignore=0` le remet dans la mesure.
+
+```
+https://monsite.fr/?qm_ignore=1     ne plus être compté
+https://monsite.fr/?qm_ignore=0     être compté à nouveau
+```
+
+Le marqueur est un **cookie propriétaire de votre site**, nommé `qm_ignore` et valant `1` (`path=/`, `samesite=lax`, `secure` en https, cinq ans). Le middleware `quiet-metrics` s'en charge : il pose ou retire le marqueur sur la réponse, et n'envoie plus rien tant qu'il est là. Rien à câbler.
+
+Il ne contient aucun identifiant (sa valeur est la même chez tout le monde), il n'est jamais transmis à Quiet Metrics, et il n'existe que pour arrêter la mesure : c'est un marqueur de refus, pas un traceur. Le tracker JS écrit en plus la même valeur en `localStorage`, mais un SDK serveur ne lit que le cookie : une seule visite suffit donc pour les deux modes de suivi.
 
 ## Comment ça marche
 
