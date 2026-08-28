@@ -51,7 +51,7 @@ final class TrackPageview
 
         // Le refus de la personne prime sur tout le reste : le marqueur
         // d'exclusion n'existe que pour arrêter la mesure.
-        if (self::isOptedOut($request)) {
+        if (HandleOptOut::isOptedOut($request)) {
             return;
         }
 

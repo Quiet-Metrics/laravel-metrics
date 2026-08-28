@@ -53,6 +53,12 @@ final class BridgeTest extends TestCase
         $app['config']->set('quiet-metrics.secret_key', 'qm_sec_test');
         $app['config']->set('quiet-metrics.endpoint', self::$server->endpoint());
         $app['config']->set('quiet-metrics.trust_proxy_headers', false);
+
+        // Le groupe `web`, ou vit desormais le middleware du marqueur, embarque
+        // le chiffrement des cookies de Laravel : sans cle, toute requete qui
+        // le traverse leve MissingAppKeyException. Rien a voir avec le SDK,
+        // c'est le minimum pour eprouver une route `web` sous Testbench.
+        $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('qm', 16)));
     }
 
     public function test_le_middleware_envoie_une_pageview_signee_apres_la_reponse(): void
@@ -114,6 +120,34 @@ final class BridgeTest extends TestCase
         $this->get('/tarifs', ['User-Agent' => 'NavigateurTest/1.0', $entete => $valeur])->assertOk();
 
         $this->assertSame([], self::$server->requests(1, 400), $entete.' annonce un préchargement');
+    }
+
+    /**
+     * Le refus ne depend pas du middleware de mesure.
+     *
+     * Le marqueur etait pose par TrackPageview, qui s'applique route par
+     * route : une application qui n'envoie que des evenements manuels, ou qui
+     * ne trace qu'une partie de ses routes, laissait donc `?qm_ignore=1` sans
+     * effet. La LECTURE du refus fonctionnait pourtant, le SDK coeur lisant
+     * le cookie, si bien qu'un visiteur restait exclu s'il s'etait retire
+     * ailleurs mais ne pouvait plus le faire ici. Un mecanisme de refus ne
+     * depend pas d'une option de mesure : le middleware dedie est pousse dans
+     * le groupe `web`, comme le bundle Symfony enregistre son listener meme
+     * sans pageview automatique.
+     */
+    public function test_le_marqueur_se_pose_sur_une_route_non_tracee(): void
+    {
+        Route::middleware('web')->get('/mentions', fn () => response('ok'));
+
+        $reponse = $this->get('/mentions?'.Client::OPT_OUT_MARKER.'=1')->assertOk();
+
+        // `false` : le marqueur est deliberement en clair, sans quoi le traceur
+        // JS du meme site ne reconnaitrait pas le refus pose cote serveur.
+        $cookie = $reponse->getCookie(Client::OPT_OUT_MARKER, false);
+        $this->assertNotNull($cookie, 'le refus doit etre posable meme la ou rien n est mesure');
+        $this->assertSame('1', $cookie->getValue());
+
+        $this->assertSame([], self::$server->requests(1, 400), 'et cette route ne mesure toujours rien');
     }
 
     public function test_la_facade_envoie_un_evenement(): void

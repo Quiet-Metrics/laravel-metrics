@@ -16,4 +16,13 @@ return [
     // À activer si l'app est derrière un reverse proxy / CDN (X-Forwarded-For).
     'trust_proxy_headers' => (bool) env('QUIET_METRICS_TRUST_PROXY', false),
 
+    /*
+     * Pousse le middleware du marqueur d'exclusion dans le groupe `web`, pour
+     * que `?qm_ignore=1` fonctionne partout et pas seulement sur les routes
+     * tracees. A ne mettre a false que si l'application gere le marqueur
+     * elle-meme : le laisser a false rend le refus inoperant sur toute route
+     * qui ne porte pas le middleware de mesure.
+     */
+    'register_opt_out_middleware' => (bool) env('QUIET_METRICS_OPT_OUT_MIDDLEWARE', true),
+
 ];
