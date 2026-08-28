@@ -36,34 +36,20 @@ final class TrackPageview
             $this->writeOptOutMarker($request, $response, $signal);
         }
 
+        // La fenêtre de visite se pose ici pour la même raison, et seulement
+        // si ce hit est mesuré : la fenêtre suit le hit, pas la requête. La
+        // décision est prise sur la réponse déjà construite, donc elle est la
+        // même que celle de terminate() juste après.
+        if ($response instanceof Response && self::measures($request, $response)) {
+            $this->openVisitWindow($request, $response);
+        }
+
         return $response;
     }
 
     public function terminate(Request $request, Response $response): void
     {
-        if (! $request->isMethod('GET')
-            || ! $response->isSuccessful()
-            || $request->expectsJson()
-            || $request->ajax()
-        ) {
-            return;
-        }
-
-        // Le refus de la personne prime sur tout le reste : le marqueur
-        // d'exclusion n'existe que pour arrêter la mesure.
-        if (HandleOptOut::isOptedOut($request)) {
-            return;
-        }
-
-        // Un préchargement annoncé par le navigateur n'est pas une visite : la
-        // requête est réelle, la réponse aussi, mais personne ne la voit tant
-        // que la navigation n'est pas confirmée. Lu sur la Request comme le
-        // reste du contexte, jamais dans `$_SERVER`.
-        if (Client::announcesPrefetch(
-            $request->headers->get('Sec-Purpose'),
-            $request->headers->get('Purpose'),
-            $request->headers->get('X-Moz'),
-        )) {
+        if (! self::measures($request, $response)) {
             return;
         }
 
@@ -75,7 +61,86 @@ final class TrackPageview
             'ip' => $request->ip(),
             'ua' => $request->userAgent(),
             'lang' => $lang !== '' ? substr($lang, 0, 5) : null,
+            // Ce que le NAVIGATEUR a envoyé, et non le cookie qu'on vient de
+            // poser sur la réponse : `c` doit dire l'état au moment du hit.
+            'visit' => self::hasVisit($request),
         ]);
+    }
+
+    /**
+     * Cette requête donne-t-elle lieu à une page vue mesurée ?
+     *
+     * Posée aux deux phases : en réponse pour décider d'ouvrir la fenêtre de
+     * visite, à terminate pour décider d'envoyer. Une seule définition, sinon
+     * les deux gestes finiraient par diverger et le cookie s'écrirait sans
+     * hit, ou l'inverse.
+     */
+    private static function measures(Request $request, Response $response): bool
+    {
+        if (! $request->isMethod('GET')
+            || ! $response->isSuccessful()
+            || $request->expectsJson()
+            || $request->ajax()
+        ) {
+            return false;
+        }
+
+        // Le refus de la personne prime sur tout le reste : le marqueur
+        // d'exclusion n'existe que pour arrêter la mesure, et on n'écrit rien
+        // chez quelqu'un qui a refusé.
+        if (HandleOptOut::isOptedOut($request)) {
+            return false;
+        }
+
+        // Un préchargement annoncé par le navigateur n'est pas une visite : la
+        // requête est réelle, la réponse aussi, mais personne ne la voit tant
+        // que la navigation n'est pas confirmée. Lu sur la Request comme le
+        // reste du contexte, jamais dans `$_SERVER`.
+        return ! Client::announcesPrefetch(
+            $request->headers->get('Sec-Purpose'),
+            $request->headers->get('Purpose'),
+            $request->headers->get('X-Moz'),
+        );
+    }
+
+    /**
+     * Une visite était-elle déjà en cours sur ce navigateur ?
+     *
+     * Lu sur la Request, jamais dans `$_COOKIE` : sous Octane la superglobale
+     * peut appartenir à la requête précédente, et la visite d'un visiteur
+     * serait recollée à celle du suivant. C'est l'erreur inverse de celle que
+     * ce cookie corrige, et la plus grave des deux : deux personnes comptées
+     * pour une.
+     */
+    private static function hasVisit(Request $request): bool
+    {
+        $cookie = $request->cookie(Client::VISIT_MARKER);
+
+        return Client::hasVisit(is_string($cookie) ? $cookie : null);
+    }
+
+    /**
+     * Ouvre ou prolonge la fenêtre de visite sur la réponse.
+     *
+     * Cookie propriétaire, `path=/`, `samesite=lax`, `secure` en https, dix
+     * minutes glissantes, et jamais httpOnly : le traceur JS du même site doit
+     * lire la même fenêtre, sinon le mode « les deux » en ouvrirait une
+     * seconde et recompterait la personne. Sa valeur est `1` chez tout le
+     * monde : elle n'identifie personne.
+     */
+    private function openVisitWindow(Request $request, Response $response): void
+    {
+        $response->headers->setCookie(Cookie::create(
+            Client::VISIT_MARKER,
+            '1',
+            time() + Client::VISIT_LIFETIME,
+            '/',
+            null,
+            $request->isSecure(),
+            false, // httpOnly : le traceur JS doit lire la même fenêtre
+            false,
+            Cookie::SAMESITE_LAX,
+        ));
     }
 
     /**

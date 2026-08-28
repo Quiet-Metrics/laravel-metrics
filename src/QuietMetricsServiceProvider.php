@@ -69,15 +69,17 @@ final class QuietMetricsServiceProvider extends ServiceProvider
             $this->app->make(Kernel::class)->pushMiddleware(HandleOptOut::class);
         }
 
-        // Le marqueur d'exclusion échappe au chiffrement des cookies de
-        // Laravel. Chiffré, il ne vaudrait plus « 1 » chez le visiteur : le
-        // traceur JS du même site ne reconnaîtrait plus le refus, et le mode
-        // « les deux » continuerait de mesurer une personne qui s'en est
-        // exclue. Il ne contient rien à protéger, c'est une valeur constante
-        // qui dit « ne me compte pas ». Le test class_exists garde le cas d'un
-        // hôte qui n'installe qu'illuminate/support.
+        // Les deux cookies échappent au chiffrement des cookies de Laravel.
+        // Chiffrés, ils ne vaudraient plus « 1 » chez le visiteur : le traceur
+        // JS du même site ne les reconnaîtrait pas, et le mode « les deux »
+        // continuerait de mesurer une personne qui s'en est exclue, ou
+        // ouvrirait une seconde fenêtre de visite pour la même personne.
+        // Ni l'un ni l'autre ne contient quoi que ce soit à protéger : leur
+        // valeur est la même chez tout le monde. Le test class_exists garde le
+        // cas d'un hôte qui n'installe qu'illuminate/support.
         if (class_exists(EncryptCookies::class)) {
             EncryptCookies::except(Client::OPT_OUT_MARKER);
+            EncryptCookies::except(Client::VISIT_MARKER);
         }
     }
 }

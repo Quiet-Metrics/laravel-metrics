@@ -278,4 +278,114 @@ final class BridgeTest extends TestCase
 
         $this->assertTrue($middleware->isDisabled(Client::OPT_OUT_MARKER));
     }
+
+    /**
+     * Continuite de visite : le cookie se pose pendant la phase REPONSE.
+     *
+     * terminate() s'execute apres l'envoi de la reponse au visiteur, il y
+     * serait trop tard pour un Set-Cookie, exactement comme pour le marqueur
+     * d'exclusion. Le premier hit ne porte pas `c` : rien n'etait ouvert au
+     * moment ou il est parti.
+     */
+    public function test_le_middleware_ouvre_la_fenetre_de_visite_sur_un_hit_mesure(): void
+    {
+        Route::middleware('quiet-metrics')->get('/tarifs', fn () => response('ok'));
+
+        $response = $this->get('/tarifs', ['User-Agent' => 'NavigateurTest/1.0']);
+        $response->assertOk();
+
+        // `false` : le cookie est deliberement en clair, sans quoi le traceur
+        // JS du meme site ouvrirait une seconde fenetre pour la meme visite.
+        $cookie = $response->getCookie(Client::VISIT_MARKER, false);
+        $this->assertNotNull($cookie);
+        $this->assertSame('1', $cookie->getValue(), 'valeur constante : elle n identifie personne');
+        $this->assertSame('/', $cookie->getPath());
+        $this->assertSame('lax', strtolower((string) $cookie->getSameSite()));
+        $this->assertFalse($cookie->isHttpOnly(), 'le traceur JS doit lire la meme fenetre');
+        $this->assertEqualsWithDelta(
+            time() + Client::VISIT_LIFETIME,
+            $cookie->getExpiresTime(),
+            60,
+            'dix minutes, comme le traceur JS',
+        );
+
+        $payload = json_decode(self::$server->requests()[0]['body'], true);
+        $this->assertArrayNotHasKey('c', $payload, 'premier hit : aucune visite n etait en cours');
+    }
+
+    /**
+     * Le hit suivant porte `c`, et la fenetre glisse.
+     *
+     * L'etat est lu sur la Request (ce que le navigateur a envoye) et jamais
+     * dans `$_COOKIE` : sous Octane la superglobale peut appartenir a la
+     * requete precedente, et deux visiteurs seraient recolles en un.
+     */
+    public function test_le_hit_suivant_porte_c_et_repousse_la_fenetre(): void
+    {
+        Route::middleware('quiet-metrics')->get('/tarifs', fn () => response('ok'));
+
+        $response = $this->call('GET', '/tarifs', [], [Client::VISIT_MARKER => '1']);
+        $response->assertOk();
+
+        $payload = json_decode(self::$server->requests()[0]['body'], true);
+        $this->assertSame(1, $payload['c'], 'une visite etait deja en cours sur ce navigateur');
+
+        $cookie = $response->getCookie(Client::VISIT_MARKER, false);
+        $this->assertNotNull($cookie, 'expiration glissante : chaque hit repousse la fenetre');
+        $this->assertEqualsWithDelta(time() + Client::VISIT_LIFETIME, $cookie->getExpiresTime(), 60);
+    }
+
+    /** Rien de mesure, rien d'ecrit : la fenetre suit le hit, pas la requete. */
+    public function test_aucune_fenetre_de_visite_quand_rien_n_est_mesure(): void
+    {
+        Route::middleware('quiet-metrics')->get('/api-like', fn () => response('ok'));
+        Route::middleware('quiet-metrics')->post('/form', fn () => response('ok'));
+        Route::middleware('quiet-metrics')->get('/introuvable', fn () => response('non', 404));
+
+        $this->getJson('/api-like')->assertCookieMissing(Client::VISIT_MARKER);
+        $this->post('/form')->assertCookieMissing(Client::VISIT_MARKER);
+        $this->get('/introuvable')->assertCookieMissing(Client::VISIT_MARKER);
+    }
+
+    /** Un prechargement n'est pas une visite : il n'en ouvre donc pas la fenetre. */
+    public function test_un_prechargement_n_ouvre_pas_de_fenetre_de_visite(): void
+    {
+        Route::middleware('quiet-metrics')->get('/tarifs', fn () => response('ok'));
+
+        $this->get('/tarifs', ['Sec-Purpose' => 'prefetch;prerender'])
+            ->assertCookieMissing(Client::VISIT_MARKER);
+    }
+
+    /**
+     * On n'ecrit RIEN chez quelqu'un qui a refuse la mesure.
+     *
+     * Ni sur la requete de celui qui a deja pose son refus, ni sur celle qui
+     * le pose : le refus vaut des la requete qui le demande.
+     */
+    public function test_aucune_fenetre_de_visite_chez_une_personne_exclue(): void
+    {
+        Route::middleware('quiet-metrics')->get('/tarifs', fn () => response('ok'));
+
+        $this->call('GET', '/tarifs', [], [Client::OPT_OUT_MARKER => '1'])
+            ->assertCookieMissing(Client::VISIT_MARKER);
+
+        $this->get('/tarifs?'.Client::OPT_OUT_MARKER.'=1')
+            ->assertCookieMissing(Client::VISIT_MARKER);
+    }
+
+    /**
+     * La fenetre de visite echappe au chiffrement des cookies de Laravel.
+     *
+     * Chiffree, sa valeur ne vaudrait plus `1` chez le visiteur : le traceur
+     * JS du meme site ne la reconnaitrait pas, ouvrirait la sienne, et le mode
+     * « les deux » compterait de nouveau deux visiteurs pour une personne.
+     * Elle ne contient rien a proteger, c'est la meme valeur chez tout le
+     * monde.
+     */
+    public function test_le_cookie_de_visite_n_est_jamais_chiffre(): void
+    {
+        $middleware = new EncryptCookies(new Encrypter(str_repeat('k', 32), 'aes-256-cbc'));
+
+        $this->assertTrue($middleware->isDisabled(Client::VISIT_MARKER));
+    }
 }
