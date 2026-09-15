@@ -72,7 +72,9 @@ protected $middlewareGroups = [
 ];
 ```
 
-The middleware only counts successful HTML `GET`s: non-GET requests, non-2xx responses and AJAX/JSON requests are ignored.
+Automatic pageviews are HTML/XHTML documents rendered in response to a `GET`, including 404/500 errors. Redirects, empty responses (204/205), PDFs, JSON and attachments are excluded, along with AJAX, announced prefetches and opted-out visitors.
+
+From version **0.4.0**, `'track_404' => true` also emits a `404` event with the page path. This option is off by default: each additional event consumes quota. Enable it server-side or through the script’s `data-404` on a given page to avoid duplicate events. Server tracking cannot see pages served by a cache that bypasses PHP.
 
 ### Facade: custom events
 
@@ -120,7 +122,7 @@ The provider builds a `Client` singleton (core package) from the `quiet-metrics`
 composer update && composer test
 ```
 
-Orchestra Testbench suite against the core package's HTTP capture server: signed middleware pageview (HMAC verified), exclusions (JSON, POST, errors), `event` facade, configured singleton.
+Orchestra Testbench suite against the core package's HTTP capture server: signed middleware pageview (HMAC verified), exclusions (JSON, PDF, POST, redirects), `event` facade, configured singleton.
 
 ## License
 

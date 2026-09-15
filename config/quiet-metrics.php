@@ -16,6 +16,9 @@ return [
     // À activer si l'app est derrière un reverse proxy / CDN (X-Forwarded-For).
     'trust_proxy_headers' => (bool) env('QUIET_METRICS_TRUST_PROXY', false),
 
+    // Événement 404 en plus de la page vue : opt-in, consomme un événement du quota.
+    'track_404' => (bool) env('QUIET_METRICS_TRACK_404', false),
+
     /*
      * Pousse le middleware du marqueur d'exclusion dans le groupe `web`, pour
      * que `?qm_ignore=1` fonctionne partout et pas seulement sur les routes

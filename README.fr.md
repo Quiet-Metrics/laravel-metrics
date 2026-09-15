@@ -72,7 +72,9 @@ protected $middlewareGroups = [
 ];
 ```
 
-Le middleware ne compte que les `GET` HTML réussis : les requêtes non GET, les réponses non 2xx et les requêtes AJAX/JSON sont ignorées.
+Les pages vues automatiques sont les documents HTML/XHTML affichés en réponse à un `GET`, y compris les erreurs 404/500. Les redirections, réponses vides (204/205), PDF, JSON et pièces jointes sont exclus, ainsi que l’AJAX, les préchargements annoncés et les visiteurs exclus.
+
+À partir de la version **0.4.0**, `'track_404' => true` active en plus un événement `404` avec le chemin de la page. Cette option est désactivée par défaut : chaque événement supplémentaire consomme le quota. Activez-la côté serveur ou via `data-404` dans le script sur une même page, pour éviter un double événement. Le suivi ne voit pas les pages servies par un cache qui contourne PHP.
 
 ### Facade : événements personnalisés
 
@@ -120,7 +122,7 @@ Le provider construit un singleton `Client` (package cœur) à partir de la conf
 composer update && composer test
 ```
 
-Suite Orchestra Testbench contre le serveur de capture HTTP du package cœur : pageview middleware signée (HMAC vérifiée), exclusions (JSON, POST, erreurs), facade `event`, singleton configuré.
+Suite Orchestra Testbench contre le serveur de capture HTTP du package cœur : pageview middleware signée (HMAC vérifiée), exclusions (JSON, PDF, POST, redirections), facade `event`, singleton configuré.
 
 ## Licence
 

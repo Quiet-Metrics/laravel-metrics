@@ -84,17 +84,53 @@ final class BridgeTest extends TestCase
         );
     }
 
-    public function test_le_middleware_ignore_json_erreurs_et_non_get(): void
+    public function test_le_middleware_ignore_json_redirections_et_non_get(): void
     {
         Route::middleware('quiet-metrics')->get('/api-like', fn () => response('ok'));
         Route::middleware('quiet-metrics')->post('/form', fn () => response('ok'));
-        Route::middleware('quiet-metrics')->get('/introuvable', fn () => response('non', 404));
+        Route::middleware('quiet-metrics')->get('/introuvable', fn () => redirect('/ailleurs'));
 
         $this->getJson('/api-like')->assertOk();          // attend du JSON → ignoré
         $this->post('/form')->assertOk();                 // non-GET → ignoré
-        $this->get('/introuvable')->assertNotFound();     // réponse non 2xx → ignorée
+        $this->get('/introuvable')->assertRedirect();     // redirection → ignorée
 
         $this->assertSame([], self::$server->requests(1, 400));
+    }
+
+    public function test_les_reponses_non_html_ne_comptent_pas_meme_sans_accept_json(): void
+    {
+        foreach (['application/json', 'application/pdf', 'text/plain', 'application/octet-stream'] as $index => $mime) {
+            Route::middleware('quiet-metrics')->get('/document-'.$index, fn () => response('document', 200, ['Content-Type' => $mime]));
+            $this->get('/document-'.$index)->assertOk()->assertCookieMissing(Client::VISIT_MARKER);
+        }
+        $this->assertSame([], self::$server->requests(1, 400));
+    }
+
+    public function test_les_pages_html_en_erreur_comptent_sans_evenement_supplementaire_par_defaut(): void
+    {
+        foreach ([404, 500] as $status) {
+            Route::middleware('quiet-metrics')->get('/erreur-'.$status, fn () => response('erreur', $status));
+            $this->get('/erreur-'.$status)->assertStatus($status)->assertCookie(Client::VISIT_MARKER);
+        }
+        $requests = self::$server->requests(2);
+        $this->assertCount(2, $requests);
+        foreach ($requests as $request) {
+            $this->assertSame('pageview', json_decode($request['body'], true)['t']);
+        }
+    }
+
+    public function test_le_diagnostic_404_est_opt_in_et_ne_rouvre_pas_un_visiteur(): void
+    {
+        config(['quiet-metrics.track_404' => true]);
+        Route::middleware('quiet-metrics')->get('/manquante', fn () => abort(404));
+        $this->get('/manquante')->assertNotFound();
+
+        $payloads = array_map(fn ($r) => json_decode($r['body'], true), self::$server->requests(2));
+        $this->assertCount(2, $payloads);
+        $this->assertSame('pageview', $payloads[0]['t']);
+        $this->assertSame('404', $payloads[1]['n']);
+        $this->assertSame('/manquante', $payloads[1]['p']['path']);
+        $this->assertSame($payloads[0]['c'] ?? null, $payloads[1]['c'] ?? null);
     }
 
     /** @return array<string, array{0:string, 1:string}> */
@@ -340,7 +376,7 @@ final class BridgeTest extends TestCase
     {
         Route::middleware('quiet-metrics')->get('/api-like', fn () => response('ok'));
         Route::middleware('quiet-metrics')->post('/form', fn () => response('ok'));
-        Route::middleware('quiet-metrics')->get('/introuvable', fn () => response('non', 404));
+        Route::middleware('quiet-metrics')->get('/introuvable', fn () => redirect('/ailleurs'));
 
         $this->getJson('/api-like')->assertCookieMissing(Client::VISIT_MARKER);
         $this->post('/form')->assertCookieMissing(Client::VISIT_MARKER);

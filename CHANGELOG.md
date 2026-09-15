@@ -3,6 +3,18 @@
 All notable changes to `quiet-metrics/laravel-metrics` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [SemVer](https://semver.org).
 
+## [0.4.0] - 2026-09-15
+
+### Fixed
+- Inspect the response Content-Type, not only the request's Accept header: PDF, JSON and file downloads no longer count as pageviews or open a visit window.
+
+### Changed
+- HTML/XHTML GET responses with 4xx/5xx status now count as pageviews, like the JavaScript tracker. Redirects, 204/205 responses, AJAX, prefetch and opt-out requests remain excluded.
+- Requires `quiet-metrics/php-metrics` `^0.4` for the shared response policy. This changes the measured population: HTML error pages are added and non-HTML responses removed, with no historical rewrite.
+
+### Added
+- Opt-in `track_404` / `QUIET_METRICS_TRACK_404=true`: adds a `404` event with the path alongside the error pageview. Disabled by default; enabling it consumes an additional quota event per 404. Use either this option or the JavaScript `data-404` option for a given page, not both.
+
 ## [0.3.0] - 2026-08-28
 
 ### Added

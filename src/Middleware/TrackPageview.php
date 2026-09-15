@@ -55,7 +55,7 @@ final class TrackPageview
 
         $lang = trim(explode(',', (string) $request->header('Accept-Language'))[0]);
 
-        $this->client->pageview([
+        $context = [
             'url' => $request->fullUrl(),
             'referrer' => $request->headers->get('referer'),
             'ip' => $request->ip(),
@@ -64,7 +64,14 @@ final class TrackPageview
             // Ce que le NAVIGATEUR a envoyé, et non le cookie qu'on vient de
             // poser sur la réponse : `c` doit dire l'état au moment du hit.
             'visit' => self::hasVisit($request),
-        ]);
+        ];
+
+        $this->client->pageview($context);
+
+        if ($response->getStatusCode() === 404 && config('quiet-metrics.track_404', false)) {
+            // Même état de visite que la page : les deux hits peuvent être traités dans le désordre.
+            $this->client->event('404', ['path' => $request->getPathInfo()], $context);
+        }
     }
 
     /**
@@ -77,8 +84,12 @@ final class TrackPageview
      */
     private static function measures(Request $request, Response $response): bool
     {
-        if (! $request->isMethod('GET')
-            || ! $response->isSuccessful()
+        if (! Client::isHtmlPageResponse(
+            $request->method(),
+            $response->getStatusCode(),
+            $response->headers->get('Content-Type'),
+            $response->headers->get('Content-Disposition'),
+        )
             || $request->expectsJson()
             || $request->ajax()
         ) {
