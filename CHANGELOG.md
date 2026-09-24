@@ -3,6 +3,18 @@
 All notable changes to `quiet-metrics/laravel-metrics` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [SemVer](https://semver.org).
 
+## [0.5.0] - 2026-09-24
+
+### Added
+- `QuietMetrics::fake()` replaces the client with a fake that records instead of sending, in the facade and the container: the middleware's pageviews go through it too. Assertions: `assertPageviewSent()`, `assertEventSent()`, `assertEventNotSent()`, `assertNothingSent()`; readers: `pageviews()`, `events()`. The fake records calls as received, before minimization.
+- `QuietMetrics\Tracker` is bound to the `Client` singleton; the facade and `TrackPageview` depend on it.
+
+### Fixed
+- The visit cookie now follows the pageview when a priority route middleware fails before `TrackPageview` (a missing route model binding, for instance): the provider moves `TrackPageview` to the front of the middleware priority, so `handle()` sees the same response as `terminate()`. Previously the pageview was sent without `qm_visit`, and the visitor's next page looked like a new visit. Verified in a fresh Laravel 13 application.
+
+### Changed
+- Requires `quiet-metrics/php-metrics` `^0.5`: the page address and referrer are minimized before sending (see the core changelog). No figure changes.
+
 ## [0.4.0] - 2026-09-15
 
 ### Documentation
