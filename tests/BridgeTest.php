@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace QuietMetrics\Laravel\Tests;
 
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use QuietMetrics\Client;
 use QuietMetrics\Laravel\Facades\QuietMetrics;
+use QuietMetrics\Laravel\Middleware\TrackPageview;
 use QuietMetrics\Laravel\QuietMetricsServiceProvider;
 use QuietMetrics\Tests\CaptureServer;
 use Orchestra\Testbench\TestCase;
@@ -117,6 +119,31 @@ final class BridgeTest extends TestCase
         foreach ($requests as $request) {
             $this->assertSame('pageview', json_decode($request['body'], true)['t']);
         }
+    }
+
+    /**
+     * Une liaison de modèle introuvable lève son exception dans un middleware
+     * placé avant TrackPageview : handle() ne voyait jamais la réponse, alors
+     * que terminate() envoyait la page vue. Le hit partait sans son cookie de
+     * visite, et la page suivante du même visiteur passait pour une nouvelle
+     * visite.
+     */
+    public function test_une_liaison_introuvable_pose_le_cookie_de_visite_avec_son_hit(): void
+    {
+        Route::bind('article', fn () => abort(404));
+        Route::middleware(['web', 'quiet-metrics'])->get('/articles/{article}', fn ($article) => response('ok'));
+
+        $response = $this->get('/articles/inconnu');
+
+        $response->assertNotFound()->assertCookie(Client::VISIT_MARKER, '1', false);
+        $this->assertCount(1, self::$server->requests(1));
+    }
+
+    public function test_le_middleware_passe_devant_les_middlewares_prioritaires(): void
+    {
+        $priority = $this->app->make(Kernel::class)->getMiddlewarePriority();
+
+        $this->assertSame(TrackPageview::class, $priority[0]);
     }
 
     public function test_le_diagnostic_404_est_opt_in_et_ne_rouvre_pas_un_visiteur(): void

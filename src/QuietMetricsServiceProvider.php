@@ -75,6 +75,28 @@ final class QuietMetricsServiceProvider extends ServiceProvider
             $this->app->make(Kernel::class)->pushMiddleware(HandleOptOut::class);
         }
 
+        // TrackPageview passe devant tous les middlewares prioritaires de la
+        // route (cookies, session, authentification, limitation, liaisons).
+        // Placé après eux, il ne voyait jamais dans handle() la réponse rendue
+        // depuis une de leurs exceptions (liaison de modèle introuvable), alors
+        // que Laravel appelait quand même son terminate() : la page vue partait
+        // sans son cookie de visite, et la page suivante du même visiteur
+        // passait pour une nouvelle visite. Devant eux, handle() et terminate()
+        // voient toujours la même réponse.
+        //
+        // Il lit alors ses deux cookies avant leur déchiffrement : sans effet,
+        // ils sont exclus du chiffrement (voir plus bas).
+        //
+        // prependToMiddlewarePriority() existe depuis Laravel 10, à la
+        // différence d'addToMiddlewarePriorityBefore(). Le contrat Kernel ne le
+        // déclare pas, d'où le method_exists().
+        if ($this->app->bound(Kernel::class)) {
+            $kernel = $this->app->make(Kernel::class);
+            if (method_exists($kernel, 'prependToMiddlewarePriority')) {
+                $kernel->prependToMiddlewarePriority(TrackPageview::class);
+            }
+        }
+
         // Les deux cookies échappent au chiffrement des cookies de Laravel.
         // Chiffrés, ils ne vaudraient plus « 1 » chez le visiteur : le traceur
         // JS du même site ne les reconnaîtrait pas, et le mode « les deux »
