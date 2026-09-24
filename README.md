@@ -21,7 +21,7 @@ The service provider and the facade alias are registered automatically (package 
 Each 0.x minor version of the bridge requires the matching minor version of the core SDK `quiet-metrics/php-metrics`: upgrade both together, and only those two.
 
 ```bash
-composer require quiet-metrics/laravel-metrics:^0.4 --no-update
+composer require quiet-metrics/laravel-metrics:^0.5 --no-update
 composer update quiet-metrics/laravel-metrics quiet-metrics/php-metrics
 ```
 
@@ -102,7 +102,24 @@ QuietMetrics::event('signup', ['plan' => 'pro']);
 QuietMetrics::pageview(['url' => 'https://mysite.com/pricing']);
 ```
 
-You can also inject `QuietMetrics\Client` directly (registered as a singleton) instead of going through the facade.
+You can also inject `QuietMetrics\Tracker` (the interface the `Client` singleton implements) instead of going through the facade: type-hinting the interface is what makes your code replaceable in tests.
+
+### In your tests
+
+From version 0.5.0, `QuietMetrics::fake()` replaces the client with a fake that records instead of sending. The middleware's pageviews go through it too.
+
+```php
+use QuietMetrics\Laravel\Facades\QuietMetrics;
+
+QuietMetrics::fake();
+
+$this->post('/register', [...])->assertRedirect();
+
+QuietMetrics::assertEventSent('signup', ['plan' => 'pro']);
+QuietMetrics::assertPageviewSent();
+```
+
+Other assertions: `assertEventNotSent('name')` and `assertNothingSent()`. The fake records what your application asks for, before the minimization applied when sending.
 
 ## Opting out of measurement
 
@@ -127,7 +144,7 @@ Note for cached sites: a measured response now carries a `Set-Cookie` header, wh
 
 ## How it works
 
-The provider builds a `Client` singleton (core package) from the `quiet-metrics` config. The middleware sends the pageview in `terminate()`, after the response has been sent to the visitor: no impact on perceived latency. The context (URL, referrer, IP, User-Agent, language) comes from the `Request` object, never from superglobals: correct under Octane and persistent workers, in tests, and aligned with the host application's trusted proxies. On the core side, sending is non-blocking (fire-and-forget socket, short cURL fallback) and every failure is silent: analytics never breaks the site.
+The provider builds a `Client` singleton (core package) from the `quiet-metrics` config. The middleware sends the pageview in `terminate()`, after the response has been sent to the visitor: no impact on perceived latency. The context (URL, referrer, IP, User-Agent, language) comes from the `Request` object, never from superglobals: correct under Octane and persistent workers, in tests, and aligned with the host application's trusted proxies. On the core side, only what the platform reads is sent (the page address reduced to its origin, its path and the `utm_source`, `utm_medium`, `utm_campaign` and `ref` parameters; the referrer reduced to its origin), sending is non-blocking (fire-and-forget socket, short cURL fallback) and every failure is silent: analytics never breaks the site.
 
 ## Tests
 
