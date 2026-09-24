@@ -16,6 +16,17 @@ composer require quiet-metrics/laravel-metrics
 
 Le service provider et l'alias de facade sont enregistrés automatiquement (package discovery).
 
+## Mettre à jour
+
+Chaque version mineure 0.x du pont exige la version mineure correspondante du SDK cœur `quiet-metrics/php-metrics` : montez les deux ensemble, et eux seuls.
+
+```bash
+composer require quiet-metrics/laravel-metrics:^0.4 --no-update
+composer update quiet-metrics/laravel-metrics quiet-metrics/php-metrics
+```
+
+Un simple `composer require` échoue, car le SDK cœur est verrouillé dans `composer.lock`. Le message d'erreur de Composer propose alors `-W` : cette option met à jour toutes les dépendances du projet, Laravel compris. Lisez le [CHANGELOG](CHANGELOG.md) avant de monter : il signale les changements dans ce qui est compté.
+
 ## Configuration
 
 Publiez le fichier de configuration (optionnel, les variables d'environnement suffisent dans la plupart des cas) :
@@ -72,9 +83,11 @@ protected $middlewareGroups = [
 ];
 ```
 
-Les pages vues automatiques sont les documents HTML/XHTML affichés en réponse à un `GET`, y compris les erreurs 404/500. Les redirections, réponses vides (204/205), PDF, JSON et pièces jointes sont exclus, ainsi que l’AJAX, les préchargements annoncés et les visiteurs exclus.
+Les pages vues automatiques sont les documents HTML/XHTML affichés en réponse à un `GET`, y compris les erreurs 404/500 levées par une route de votre application (`abort(404)`, modèle introuvable). Les redirections, réponses vides (204/205), PDF, JSON et pièces jointes sont exclus, ainsi que l’AJAX, les préchargements annoncés et les visiteurs exclus.
 
-À partir de la version **0.4.0**, `'track_404' => true` active en plus un événement `404` avec le chemin de la page. Cette option est désactivée par défaut : chaque événement supplémentaire consomme le quota. Activez-la côté serveur ou via `data-404` dans le script sur une même page, pour éviter un double événement. Le suivi ne voit pas les pages servies par un cache qui contourne PHP.
+**Les adresses qui ne correspondent à aucune route ne sont pas mesurées** par l'intégration dans le groupe `web` : quand aucune route ne correspond, Laravel n'exécute aucun middleware de groupe. Ces 404 comprennent les liens cassés et les anciennes adresses, mais aussi la plupart des requêtes de robots qui sondent les sites (`/wp-login.php`, `/.env`). Pour les mesurer quand même, déclarez le middleware dans la pile globale, **à la place** du groupe `web` : `$middleware->append(TrackPageview::class)` en Laravel 11+, le tableau `$middleware` de `app/Http/Kernel.php` en Laravel 10. La pile globale couvre aussi les routes hors du groupe `web`, comme un panneau d'administration : écartez-les avec les chemins exclus dans les réglages du site. Ne déclarez pas le middleware aux deux endroits, sinon chaque page serait comptée deux fois.
+
+À partir de la version **0.4.0**, `'track_404' => true` active en plus un événement `404` avec le chemin de la page, sur les seules 404 que le middleware voit. Cette option est désactivée par défaut : chaque événement supplémentaire consomme le quota. Activez-la côté serveur ou via `data-404` dans le script sur une même page, pour éviter un double événement. Le suivi ne voit pas les pages servies par un cache qui contourne PHP.
 
 ### Facade : événements personnalisés
 

@@ -16,6 +16,17 @@ composer require quiet-metrics/laravel-metrics
 
 The service provider and the facade alias are registered automatically (package discovery).
 
+## Upgrading
+
+Each 0.x minor version of the bridge requires the matching minor version of the core SDK `quiet-metrics/php-metrics`: upgrade both together, and only those two.
+
+```bash
+composer require quiet-metrics/laravel-metrics:^0.4 --no-update
+composer update quiet-metrics/laravel-metrics quiet-metrics/php-metrics
+```
+
+A plain `composer require` fails, because the core SDK is locked in `composer.lock`. Composer's error message then suggests `-W`: that option updates every dependency of the project, Laravel included. Read the [CHANGELOG](CHANGELOG.md) before upgrading: it flags changes in what gets counted.
+
 ## Configuration
 
 Publish the configuration file (optional; environment variables are enough in most cases):
@@ -72,9 +83,11 @@ protected $middlewareGroups = [
 ];
 ```
 
-Automatic pageviews are HTML/XHTML documents rendered in response to a `GET`, including 404/500 errors. Redirects, empty responses (204/205), PDFs, JSON and attachments are excluded, along with AJAX, announced prefetches and opted-out visitors.
+Automatic pageviews are HTML/XHTML documents rendered in response to a `GET`, including 404/500 errors raised by one of your application's routes (`abort(404)`, model not found). Redirects, empty responses (204/205), PDFs, JSON and attachments are excluded, along with AJAX, announced prefetches and opted-out visitors.
 
-From version **0.4.0**, `'track_404' => true` also emits a `404` event with the page path. This option is off by default: each additional event consumes quota. Enable it server-side or through the script’s `data-404` on a given page to avoid duplicate events. Server tracking cannot see pages served by a cache that bypasses PHP.
+**Addresses that match no route are not measured** by the `web` group integration: when no route matches, Laravel runs no group middleware. These 404s include broken links and old addresses, but also most requests from bots probing websites (`/wp-login.php`, `/.env`). To measure them anyway, register the middleware in the global stack, **instead of** the `web` group: `$middleware->append(TrackPageview::class)` on Laravel 11+, the `$middleware` array of `app/Http/Kernel.php` on Laravel 10. The global stack also covers routes outside the `web` group, such as an admin panel: leave them out with the excluded paths in the site settings. Do not register the middleware in both places, or every page would be counted twice.
+
+From version **0.4.0**, `'track_404' => true` also emits a `404` event with the page path, on the 404s the middleware sees and no others. This option is off by default: each additional event consumes quota. Enable it server-side or through the script’s `data-404` on a given page to avoid duplicate events. Server tracking cannot see pages served by a cache that bypasses PHP.
 
 ### Facade: custom events
 
