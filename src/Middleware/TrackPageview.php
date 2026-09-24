@@ -7,6 +7,7 @@ namespace QuietMetrics\Laravel\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use QuietMetrics\Client;
+use QuietMetrics\Tracker;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -22,7 +23,11 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class TrackPageview
 {
-    public function __construct(private readonly Client $client) {}
+    /**
+     * Dépend de Tracker et non de Client : c'est ce qui fait passer les pages
+     * vues par le faux de QuietMetrics::fake() dans les tests de l'application.
+     */
+    public function __construct(private readonly Tracker $tracker) {}
 
     public function handle(Request $request, Closure $next): mixed
     {
@@ -66,11 +71,11 @@ final class TrackPageview
             'visit' => self::hasVisit($request),
         ];
 
-        $this->client->pageview($context);
+        $this->tracker->pageview($context);
 
         if ($response->getStatusCode() === 404 && config('quiet-metrics.track_404', false)) {
             // Même état de visite que la page : les deux hits peuvent être traités dans le désordre.
-            $this->client->event('404', ['path' => $request->getPathInfo()], $context);
+            $this->tracker->event('404', ['path' => $request->getPathInfo()], $context);
         }
     }
 

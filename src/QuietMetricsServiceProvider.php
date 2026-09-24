@@ -11,6 +11,7 @@ use Illuminate\Support\ServiceProvider;
 use QuietMetrics\Client;
 use QuietMetrics\Laravel\Middleware\HandleOptOut;
 use QuietMetrics\Laravel\Middleware\TrackPageview;
+use QuietMetrics\Tracker;
 
 final class QuietMetricsServiceProvider extends ServiceProvider
 {
@@ -27,6 +28,11 @@ final class QuietMetricsServiceProvider extends ServiceProvider
                 'trust_proxy_headers' => $config['trust_proxy_headers'],
             ]);
         });
+
+        // Tracker est ce que le code appelant doit typer : c'est lui que
+        // QuietMetrics::fake() remplace. Qui type Client en dur obtient
+        // toujours le vrai client.
+        $this->app->alias(Client::class, Tracker::class);
     }
 
     public function boot(): void
