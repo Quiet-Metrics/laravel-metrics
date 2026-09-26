@@ -21,7 +21,7 @@ Le service provider et l'alias de facade sont enregistrés automatiquement (pack
 Chaque version mineure 0.x du pont exige la version mineure correspondante du SDK cœur `quiet-metrics/php-metrics` : montez les deux ensemble, et eux seuls.
 
 ```bash
-composer require quiet-metrics/laravel-metrics:^0.5 --no-update
+composer require quiet-metrics/laravel-metrics:^0.6 --no-update
 composer update quiet-metrics/laravel-metrics quiet-metrics/php-metrics
 ```
 
@@ -48,6 +48,7 @@ QUIET_METRICS_SECRET_KEY=qm_sec_xxxx
 # Facultatives :
 QUIET_METRICS_ENDPOINT=https://quietmetrics.dev/api/v1/collect
 QUIET_METRICS_TRUST_PROXY=false   # true si l'app est derrière un reverse proxy / CDN
+QUIET_METRICS_SEO_CRAWL=false     # true autorise l'onglet SEO de Quiet Metrics à explorer le site (voir plus bas)
 ```
 
 ## Usage
@@ -141,6 +142,21 @@ Quand l'empreinte visiteur change en cours de visite (4G puis wifi), la même pe
 Sa valeur est constante, la même chez tout le monde : elle n'identifie personne, elle dit seulement qu'une visite est déjà en cours sur ce navigateur. Il n'est jamais écrit chez quelqu'un qui a posé le marqueur d'exclusion, ni quand rien n'est mesuré. Le middleware `quiet-metrics` l'écrit pendant la phase réponse, sur les requêtes dont il envoie la page vue dans `terminate()`. Comme le marqueur d'exclusion, il échappe au chiffrement des cookies de Laravel : le traceur JS du même site doit lire la même fenêtre.
 
 À savoir si votre site est mis en cache : une réponse mesurée porte désormais un en-tête `Set-Cookie`, que certains reverse proxys et CDN prennent comme une raison de ne pas stocker la réponse.
+
+## Crawl SEO
+
+L'onglet SEO de Quiet Metrics n'explore qu'un site qui prouve appartenir au compte qui l'a déclaré. Posez les deux variables et le pont sert cette preuve automatiquement sur `/.well-known/quietmetrics.json` :
+
+```dotenv
+QUIET_METRICS_SECRET_KEY=qm_sec_xxxx
+QUIET_METRICS_SEO_CRAWL=true
+```
+
+Le document vaut `{"site_verification":["<jeton>"]}`, où le jeton est un HMAC-SHA256 calculé avec votre clé **secrète** (jamais la clé elle-même ; la clé publique ne conviendrait pas, puisqu'elle se lit dans le HTML de vos pages). Il ne répond qu'à `GET` et `HEAD`, avec `Content-Type: application/json` et `Cache-Control: no-store`.
+
+Éteint par défaut. Sans `QUIET_METRICS_SEO_CRAWL=true`, ou sans clé secrète, rien n'est enregistré : le chemin appartient à votre application (son 404, ou sa propre route), et aucun crawl n'a lieu.
+
+Le pont répond depuis un middleware global, poussé par le provider seulement quand l'option est active, plutôt que depuis une route : il passe avant le routage, hors du groupe `web` (sans session), et ne dépend pas de `route:cache`. Après avoir changé la variable avec une configuration en cache, relancez `php artisan config:cache`.
 
 ## Comment ça marche
 

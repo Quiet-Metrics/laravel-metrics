@@ -20,6 +20,16 @@ return [
     'track_404' => (bool) env('QUIET_METRICS_TRACK_404', false),
 
     /*
+     * Crawl SEO : l'onglet SEO de Quiet Metrics n'explore que les sites qui
+     * prouvent appartenir au compte qui les a déclarés. A true, et avec la cle
+     * secrete ci-dessus, le SDK sert cette preuve sur
+     * `/.well-known/quietmetrics.json` (un HMAC de la cle secrete, jamais la
+     * cle elle-meme). Eteint par defaut : rien n'est servi, et la plateforme
+     * n'explore pas le site.
+     */
+    'seo_crawl' => (bool) env('QUIET_METRICS_SEO_CRAWL', false),
+
+    /*
      * Pousse le middleware du marqueur d'exclusion dans le groupe `web`, pour
      * que `?qm_ignore=1` fonctionne partout et pas seulement sur les routes
      * tracees. A ne mettre a false que si l'application gere le marqueur

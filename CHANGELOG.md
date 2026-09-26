@@ -3,6 +3,15 @@
 All notable changes to `quiet-metrics/laravel-metrics` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [SemVer](https://semver.org).
 
+## [0.6.0] - 2026-09-28
+
+### Added
+- **SEO crawl.** New `seo_crawl` config key, read from `QUIET_METRICS_SEO_CRAWL` and `false` by default. When it is `true` and a secret key is set, the bridge serves the site ownership proof the Quiet Metrics SEO tab requires before crawling, at `/.well-known/quietmetrics.json` (`GET` and `HEAD`, `application/json`, `Cache-Control: no-store`). Otherwise nothing is registered and the path stays with the application.
+- The answer comes from a `ServeSiteVerification` middleware pushed onto the kernel's global stack by the provider, only when the document exists. A global middleware rather than a route: it runs before routing, outside the `web` group (no session), is never measured, and does not depend on `route:cache`, which would freeze or drop a route declared from a provider.
+
+### Changed
+- Requires `quiet-metrics/php-metrics` `^0.6`.
+
 ## [0.5.0] - 2026-09-24
 
 ### Added

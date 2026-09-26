@@ -10,6 +10,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Support\ServiceProvider;
 use QuietMetrics\Client;
 use QuietMetrics\Laravel\Middleware\HandleOptOut;
+use QuietMetrics\Laravel\Middleware\ServeSiteVerification;
 use QuietMetrics\Laravel\Middleware\TrackPageview;
 use QuietMetrics\Tracker;
 
@@ -20,12 +21,14 @@ final class QuietMetricsServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../config/quiet-metrics.php', 'quiet-metrics');
 
         $this->app->singleton(Client::class, static function (Application $app): Client {
-            /** @var array{public_key:?string,secret_key:?string,endpoint:string,trust_proxy_headers:bool} $config */
+            /** @var array{public_key:?string,secret_key:?string,endpoint:string,trust_proxy_headers:bool,seo_crawl?:bool} $config */
             $config = $app['config']['quiet-metrics'];
 
             return new Client((string) $config['public_key'], $config['secret_key'], [
                 'endpoint' => $config['endpoint'],
                 'trust_proxy_headers' => $config['trust_proxy_headers'],
+                // `?? false` : une config publiée avant 0.6.0 n'a pas la clé.
+                'seo_crawl' => (bool) ($config['seo_crawl'] ?? false),
             ]);
         });
 
@@ -73,6 +76,24 @@ final class QuietMetricsServiceProvider extends ServiceProvider
             && $this->app->bound(Kernel::class)
         ) {
             $this->app->make(Kernel::class)->pushMiddleware(HandleOptOut::class);
+        }
+
+        // La preuve de propriété exigée par le crawl SEO, sur
+        // `/.well-known/quietmetrics.json`. Poussée seulement quand le client
+        // a un document à servir (`seo_crawl` activé ET clé secrète posée) :
+        // par défaut rien n'est enregistré, et le chemin reste à l'application
+        // (son 404, ou sa propre route).
+        //
+        // Middleware global et non route : une route ajoutée depuis un
+        // provider est figée ou perdue par `route:cache`, et couper l'option
+        // laisserait le document en ligne jusqu'à la reconstruction du cache.
+        // La pile globale répond avant le routage, hors du groupe `web`, donc
+        // sans session. Voir ServeSiteVerification.
+        if ((bool) ($this->app['config']['quiet-metrics']['seo_crawl'] ?? false)
+            && $this->app->bound(Kernel::class)
+            && $this->app->make(Client::class)->siteVerificationDocument() !== null
+        ) {
+            $this->app->make(Kernel::class)->pushMiddleware(ServeSiteVerification::class);
         }
 
         // TrackPageview passe devant tous les middlewares prioritaires de la

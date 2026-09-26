@@ -21,7 +21,7 @@ The service provider and the facade alias are registered automatically (package 
 Each 0.x minor version of the bridge requires the matching minor version of the core SDK `quiet-metrics/php-metrics`: upgrade both together, and only those two.
 
 ```bash
-composer require quiet-metrics/laravel-metrics:^0.5 --no-update
+composer require quiet-metrics/laravel-metrics:^0.6 --no-update
 composer update quiet-metrics/laravel-metrics quiet-metrics/php-metrics
 ```
 
@@ -48,6 +48,7 @@ QUIET_METRICS_SECRET_KEY=qm_sec_xxxx
 # Optional:
 QUIET_METRICS_ENDPOINT=https://quietmetrics.dev/api/v1/collect
 QUIET_METRICS_TRUST_PROXY=false   # true if the app sits behind a reverse proxy / CDN
+QUIET_METRICS_SEO_CRAWL=false     # true lets the Quiet Metrics SEO tab crawl the site (see below)
 ```
 
 ## Usage
@@ -141,6 +142,21 @@ When the visitor fingerprint changes mid-visit (4G, then wifi), the same person 
 Its value is a constant, the same for everyone, so it identifies nobody: it only says that a visit is already under way in this browser. It is never written to someone who has set the opt-out marker, and never written when nothing is measured: the `quiet-metrics` middleware writes it during the response phase, on the very requests whose pageview it sends in `terminate()`. Like the opt-out marker, it is exempt from Laravel cookie encryption, since the JS tracker of the same site has to read the same window.
 
 Note for cached sites: a measured response now carries a `Set-Cookie` header, which some reverse proxies and CDNs treat as a reason not to store the response.
+
+## SEO crawl
+
+The SEO tab of Quiet Metrics only crawls a site that proves it belongs to the account that declared it. Set both variables and the bridge serves that proof automatically at `/.well-known/quietmetrics.json`:
+
+```dotenv
+QUIET_METRICS_SECRET_KEY=qm_sec_xxxx
+QUIET_METRICS_SEO_CRAWL=true
+```
+
+The document is `{"site_verification":["<token>"]}`, where the token is an HMAC-SHA256 computed with your **secret** key (never the key itself; the public key would not do, since it can be read in your pages' HTML). It is answered to `GET` and `HEAD` only, with `Content-Type: application/json` and `Cache-Control: no-store`.
+
+Off by default. Without `QUIET_METRICS_SEO_CRAWL=true`, or without a secret key, nothing is registered: the path belongs to your application (its 404, or its own route), and no crawl happens.
+
+The bridge answers from a global middleware, pushed by the provider only when the option is on, rather than from a route: it runs before routing, outside the `web` group (no session), and it does not depend on `route:cache`. After changing the variable with a cached configuration, run `php artisan config:cache` again.
 
 ## How it works
 
