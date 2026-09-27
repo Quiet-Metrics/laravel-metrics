@@ -4,7 +4,7 @@
 
 > 🇬🇧 [English version](README.md)
 
-Pont Laravel de [Quiet Metrics](https://quietmetrics.dev) (La Boîte à Code) : pageviews serveur automatiques via middleware, facade pour les événements, configuration publiable. Le tracking se fait à 100 % côté serveur, sans JS et sans cookie d'identification ni de traçabilité, invisible pour les adblockers. Repose sur le [package cœur PHP](https://github.com/Quiet-Metrics/php-metrics) (`quiet-metrics/php-metrics`).
+Pont Laravel de [Quiet Metrics](https://quietmetrics.dev) (QuietSystems) : pageviews serveur automatiques via middleware, facade pour les événements, configuration publiable. Le tracking se fait à 100 % côté serveur, sans JS et sans cookie d'identification ni de traçabilité, invisible pour les adblockers. Repose sur le [package cœur PHP](https://github.com/Quiet-Metrics/php-metrics) (`quiet-metrics/php-metrics`).
 
 Compatible Laravel 10 à 13 (illuminate/support ^10 || ^11 || ^12 || ^13), PHP >= 8.1.
 
@@ -172,4 +172,4 @@ Suite Orchestra Testbench contre le serveur de capture HTTP du package cœur : p
 
 ## Licence
 
-MIT. Un produit [La Boîte à Code](https://laboiteacode.fr) pour [Quiet Metrics](https://quietmetrics.dev).
+MIT. Un produit [QuietSystems](https://quietsystems.dev) pour [Quiet Metrics](https://quietmetrics.dev).
