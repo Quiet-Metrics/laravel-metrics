@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'heading' => 'Quiet Metrics',
+    'period' => 'Du :from au :to',
+    'visitors' => 'Visiteurs par jour, cumulés',
+    'visitors_help' => 'Somme des visiteurs uniques de chaque journée : une personne revenue un autre jour est recomptée.',
+    'pageviews' => 'Pages vues',
+    'sessions' => 'Sessions',
+    'up' => 'En hausse de :value % sur la période précédente',
+    'down' => 'En baisse de :value % sur la période précédente',
+    'flat' => 'Stable par rapport à la période précédente',
+    'no_comparison' => 'Pas de comparaison',
+    'trend' => 'Visiteurs par jour, du :from au :to : entre :min et :max.',
+    'top_pages' => 'Pages les plus vues',
+    'page' => 'Page',
+    'views' => 'Vues',
+    'no_pages' => 'Aucune page vue sur la période.',
+    'other_pages' => 'Autres pages, regroupées',
+    'capped' => 'Au-delà du plafond quotidien, les pages les moins vues sont regroupées sur une ligne : aucune visite n\'est perdue.',
+    'open' => 'Ouvrir dans Quiet Metrics',
+    'not_configured' => 'Renseignez QUIET_METRICS_PUBLIC_KEY et QUIET_METRICS_READ_TOKEN pour afficher les chiffres de votre site.',
+    'rejected' => 'Quiet Metrics a refusé la requête : vérifiez que le jeton de lecture est toujours valide et couvre ce site.',
+    'unavailable' => 'Les chiffres sont indisponibles pour le moment. Réessayez dans quelques minutes.',
+];

@@ -44,6 +44,11 @@ final class QuietMetricsServiceProvider extends ServiceProvider
             __DIR__ . '/../config/quiet-metrics.php' => config_path('quiet-metrics.php'),
         ], 'quiet-metrics-config');
 
+        // Vue et traductions du widget Filament facultatif. Les déclarer ne
+        // charge rien de Filament : sans lui, elles ne servent simplement pas.
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'quiet-metrics');
+        $this->loadTranslationsFrom(__DIR__ . '/../lang', 'quiet-metrics');
+
         // Route::middleware('quiet-metrics') → pageviews serveur automatiques.
         $this->app['router']->aliasMiddleware('quiet-metrics', TrackPageview::class);
         $this->app['router']->aliasMiddleware('quiet-metrics-optout', HandleOptOut::class);

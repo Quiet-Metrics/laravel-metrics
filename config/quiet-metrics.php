@@ -11,6 +11,14 @@ return [
     // compté). Docs/05-api-et-sdk.md §1.
     'secret_key' => env('QUIET_METRICS_SECRET_KEY'),
 
+    /*
+     * Jeton de LECTURE (API de lecture, page « Jetons API » de l'espace
+     * membre), distinct des clés de collecte ci-dessus. Seul le widget
+     * Filament facultatif s'en sert, côté serveur : il n'est jamais rendu
+     * dans une page. Créez-le restreint à ce seul site.
+     */
+    'read_token' => env('QUIET_METRICS_READ_TOKEN'),
+
     'endpoint' => env('QUIET_METRICS_ENDPOINT', 'https://quietmetrics.dev/api/v1/collect'),
 
     // À activer si l'app est derrière un reverse proxy / CDN (X-Forwarded-For).

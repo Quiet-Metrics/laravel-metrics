@@ -27,6 +27,9 @@
         "quiet-metrics/php-metrics": "^0.6",
         "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0"
     },
+    "suggest": {
+        "filament/filament": "Widget de tableau de bord Quiet Metrics (^4.0 || ^5.0), facultatif"
+    },
     "autoload": {
         "psr-4": {
             "QuietMetrics\\Laravel\\": "src/"
@@ -59,6 +62,7 @@
         }
     ],
     "require-dev": {
+        "filament/filament": "^4.0 || ^5.0",
         "orchestra/testbench": "^10.0 || ^11.0"
     },
     "autoload-dev": {

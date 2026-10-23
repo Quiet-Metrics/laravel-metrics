@@ -158,6 +158,27 @@ Le document vaut `{"site_verification":["<jeton>"]}`, où le jeton est un HMAC-S
 
 Le pont répond depuis un middleware global, poussé par le provider seulement quand l'option est active, plutôt que depuis une route : il passe avant le routage, hors du groupe `web` (sans session), et ne dépend pas de `route:cache`. Après avoir changé la variable avec une configuration en cache, relancez `php artisan config:cache`.
 
+## Widget de tableau de bord (Filament, facultatif)
+
+Depuis la version 0.7.0, une application qui utilise Filament 4 ou 5 peut afficher les chiffres du site dans sa propre administration : visiteurs par jour cumulés, pages vues et sessions sur les 30 derniers jours avec leur évolution sur la période précédente, une tendance des visiteurs, les cinq pages les plus vues, et un lien « Ouvrir dans Quiet Metrics ». Filament est seulement suggéré, jamais exigé : sans lui, le pont fonctionne comme avant.
+
+1. Dans Quiet Metrics, **Espace membre → Jetons API**, créez un jeton restreint à ce site. Il ne fait que lire les statistiques et reste distinct des clés de collecte : le révoquer n'arrête jamais la mesure.
+2. Ajoutez-le au `.env` :
+
+   ```dotenv
+   QUIET_METRICS_READ_TOKEN=12|xxxxxxxxxxxxxxxx
+   ```
+
+3. Déclarez le widget dans le provider de votre panel :
+
+   ```php
+   use QuietMetrics\Laravel\Filament\QuietMetricsWidget;
+
+   ->widgets([QuietMetricsWidget::class])
+   ```
+
+Les chiffres sont lus côté serveur sur l'API de lecture (`summary`, `timeseries`, `breakdown` par page), sur l'hôte de `QUIET_METRICS_ENDPOINT`, avec des délais courts, et gardés dix minutes dans le cache de l'application sous une clé hachée : le jeton n'atteint jamais le navigateur ni une clé de cache en clair. Une valeur précédente `null` ou nulle, ou une fenêtre de comparaison que l'API marque comme non mesurée, se lit « Pas de comparaison », jamais une baisse. Un jeton refusé ou un service injoignable affichent un message neutre, jamais le corps de la réponse. Le widget suit le chargement différé de Filament, et tout utilisateur du panel qui voit le tableau de bord le voit : étendez la classe et redéfinissez `canView()` pour le restreindre, ou `$period` (un preset de l'API comme `7d`) pour changer la période. Traductions : anglais et français.
+
 ## Comment ça marche
 
 Le provider construit un singleton `Client` (package cœur) à partir de la config `quiet-metrics`. Le middleware envoie la pageview dans `terminate()`, après l'envoi de la réponse au visiteur : aucun impact sur la latence perçue. Le contexte (URL, referrer, IP, User-Agent, langue) vient de l'objet `Request` et non des superglobales : correct sous Octane et workers persistants, dans les tests, et aligné sur les trusted proxies de l'application hôte. Côté cœur, seul ce que la plateforme lit est transmis (l'adresse de la page réduite à son origine, à son chemin et aux paramètres `utm_source`, `utm_medium`, `utm_campaign` et `ref` ; le référent réduit à son origine), l'envoi est non bloquant (socket fire-and-forget, repli cURL court) et tout échec est silencieux : l'analytics ne casse jamais le site.

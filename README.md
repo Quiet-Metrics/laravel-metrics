@@ -158,6 +158,27 @@ Off by default. Without `QUIET_METRICS_SEO_CRAWL=true`, or without a secret key,
 
 The bridge answers from a global middleware, pushed by the provider only when the option is on, rather than from a route: it runs before routing, outside the `web` group (no session), and it does not depend on `route:cache`. After changing the variable with a cached configuration, run `php artisan config:cache` again.
 
+## Dashboard widget (Filament, optional)
+
+From version 0.7.0, an application that uses Filament 4 or 5 can show the site's figures in its own admin: daily visitors (summed), page views and sessions over the last 30 days with their change on the previous period, a visitors trend, the five most viewed pages, and a link "Open in Quiet Metrics". Filament is only suggested, never required: without it the bridge works as before.
+
+1. In Quiet Metrics, **Dashboard → API tokens**, create a token restricted to this site. It only reads statistics and is separate from the collection keys: revoking it never stops measurement.
+2. Add it to `.env`:
+
+   ```dotenv
+   QUIET_METRICS_READ_TOKEN=12|xxxxxxxxxxxxxxxx
+   ```
+
+3. Register the widget in your panel provider:
+
+   ```php
+   use QuietMetrics\Laravel\Filament\QuietMetricsWidget;
+
+   ->widgets([QuietMetricsWidget::class])
+   ```
+
+The figures are read server side from the read API (`summary`, `timeseries`, `breakdown` by page) on the host of `QUIET_METRICS_ENDPOINT`, with short timeouts, and kept ten minutes in the application cache under a hashed key: the token never reaches the browser nor a cache key in clear. A previous value that is `null` or zero, or a comparison window the API marks as not measured, reads "No comparison", never a drop. A refused token or an unreachable service shows a neutral message, never the response body. The widget follows Filament's lazy loading, and every panel user who can see the dashboard sees it: extend the class and override `canView()` to restrict it, or `$period` (an API preset such as `7d`) to change the period. Translations: English and French.
+
 ## How it works
 
 The provider builds a `Client` singleton (core package) from the `quiet-metrics` config. The middleware sends the pageview in `terminate()`, after the response has been sent to the visitor: no impact on perceived latency. The context (URL, referrer, IP, User-Agent, language) comes from the `Request` object, never from superglobals: correct under Octane and persistent workers, in tests, and aligned with the host application's trusted proxies. On the core side, only what the platform reads is sent (the page address reduced to its origin, its path and the `utm_source`, `utm_medium`, `utm_campaign` and `ref` parameters; the referrer reduced to its origin), sending is non-blocking (fire-and-forget socket, short cURL fallback) and every failure is silent: analytics never breaks the site.

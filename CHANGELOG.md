@@ -3,6 +3,12 @@
 All notable changes to `quiet-metrics/laravel-metrics` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [SemVer](https://semver.org).
 
+## [0.7.0] - Unreleased
+
+### Added
+- **Optional Filament dashboard widget**, `QuietMetrics\Laravel\Filament\QuietMetricsWidget`, for Filament 4 or 5: daily visitors (summed), page views and sessions over the last 30 days with their change on the previous period, a visitors trend, the five most viewed pages, and a link to Quiet Metrics. Read server side from the read API with a new `read_token` key (`QUIET_METRICS_READ_TOKEN`), a token restricted to the site and separate from the collection keys. Responses are cached ten minutes under a hashed key; errors show a neutral message. English and French translations.
+- `filament/filament` is suggested, not required: without Filament, nothing changes.
+
 ## [0.6.0] - 2026-09-28
 
 ### Added

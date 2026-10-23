@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'heading' => 'Quiet Metrics',
+    'period' => 'From :from to :to',
+    'visitors' => 'Daily visitors, summed',
+    'visitors_help' => 'The sum of each day\'s unique visitors: someone who comes back another day is counted again.',
+    'pageviews' => 'Page views',
+    'sessions' => 'Sessions',
+    'up' => 'Up :value% on the previous period',
+    'down' => 'Down :value% on the previous period',
+    'flat' => 'Unchanged from the previous period',
+    'no_comparison' => 'No comparison',
+    'trend' => 'Visitors per day, from :from to :to: between :min and :max.',
+    'top_pages' => 'Top pages',
+    'page' => 'Page',
+    'views' => 'Views',
+    'no_pages' => 'No page viewed over the period.',
+    'other_pages' => 'Other pages, grouped',
+    'capped' => 'Beyond the daily cap, the least viewed pages are grouped on one line: no visit is lost.',
+    'open' => 'Open in Quiet Metrics',
+    'not_configured' => 'Set QUIET_METRICS_PUBLIC_KEY and QUIET_METRICS_READ_TOKEN to show the figures of your site.',
+    'rejected' => 'Quiet Metrics refused the request: check that the read token is still valid and covers this site.',
+    'unavailable' => 'The figures are unavailable right now. Try again in a few minutes.',
+];
