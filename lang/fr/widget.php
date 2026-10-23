@@ -20,6 +20,8 @@ return [
     'capped' => 'Au-delà du plafond quotidien, les pages les moins vues sont regroupées sur une ligne : aucune visite n\'est perdue.',
     'open' => 'Ouvrir dans Quiet Metrics',
     'not_configured' => 'Renseignez QUIET_METRICS_PUBLIC_KEY et QUIET_METRICS_READ_TOKEN pour afficher les chiffres de votre site.',
-    'rejected' => 'Quiet Metrics a refusé la requête : vérifiez que le jeton de lecture est toujours valide et couvre ce site.',
+    'insecure' => 'L\'adresse de Quiet Metrics doit être en https : le jeton de lecture ne part jamais sur une connexion non chiffrée.',
+    'rejected' => 'Quiet Metrics n\'a pas accepté le jeton de lecture : vérifiez qu\'il est toujours valide (ni expiré, ni révoqué) et que la clé publique est bien celle de ce site.',
+    'forbidden' => 'Quiet Metrics a refusé l\'accès : l\'API de lecture demande le plan Pro ou Agence (ou un essai en cours), et le jeton doit couvrir ce site.',
     'unavailable' => 'Les chiffres sont indisponibles pour le moment. Réessayez dans quelques minutes.',
 ];

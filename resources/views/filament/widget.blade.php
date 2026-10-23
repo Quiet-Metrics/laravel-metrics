@@ -3,7 +3,7 @@
     use Illuminate\Support\Number;
 
     $locale = app()->getLocale();
-    $date = fn (string $day): string => $day === '' ? '' : Carbon::parse($day)->locale($locale)->isoFormat('LL');
+    $date = fn (string $day): string => Carbon::parse($day)->locale($locale)->isoFormat('LL');
     $number = fn (?int $value): string => $value === null ? '' : Number::format($value, locale: $locale);
 @endphp
 
@@ -67,7 +67,7 @@
                 <tbody>
                     @forelse ($stats['pages'] as $page)
                         <tr>
-                            <td style="padding-top: 0.25rem; overflow-wrap: anywhere;">{{ $page['label'] === '~autres' ? __('quiet-metrics::widget.other_pages') : ($page['label'] ?? '') }}</td>
+                            <td style="padding-top: 0.25rem; overflow-wrap: anywhere;">{{ $page['label'] === '~autres' ? __('quiet-metrics::widget.other_pages') : $page['label'] }}</td>
                             <td style="padding-top: 0.25rem; text-align: end;">{{ $number($page['value']) }}</td>
                         </tr>
                     @empty

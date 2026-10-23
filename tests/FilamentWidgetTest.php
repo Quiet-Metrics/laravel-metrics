@@ -139,7 +139,7 @@ final class FilamentWidgetTest extends TestCase
         $this->assertStringNotContainsString(self::TOKEN, (string) array_key_first($storage));
     }
 
-    public function test_an_api_error_shows_a_neutral_message_and_is_not_cached(): void
+    public function test_an_api_error_shows_a_neutral_message_and_is_cached_one_minute(): void
     {
         Http::fake(['*' => Http::response('SQLSTATE secret detail', 500)]);
 
@@ -149,17 +149,76 @@ final class FilamentWidgetTest extends TestCase
         $this->assertStringContainsString('The figures are unavailable right now.', $html);
         $this->assertStringNotContainsString('SQLSTATE', $html);
         $this->assertStringNotContainsString(self::TOKEN, $html);
+        Http::assertSentCount(1);
+
+        $this->travel(DashboardStats::FAILURE_CACHE_SECONDS + 1)->seconds();
+        $this->render();
         Http::assertSentCount(2);
     }
 
-    public function test_a_rejected_token_says_so_without_showing_it(): void
+    public function test_an_invalid_or_expired_token_says_so_without_showing_it(): void
     {
         Http::fake(['*' => Http::response(['message' => 'Unauthenticated.'], 401)]);
 
         $html = $this->render();
 
-        $this->assertStringContainsString('Quiet Metrics refused the request', $html);
+        $this->assertStringContainsString('did not accept the read token', $html);
         $this->assertStringNotContainsString(self::TOKEN, $html);
+    }
+
+    public function test_a_plan_or_scope_refusal_is_told_apart_from_an_invalid_token(): void
+    {
+        Http::fake(['*' => Http::response(['message' => "L'API de lecture est réservée aux plans Pro et Agence."], 403)]);
+
+        $html = $this->render();
+
+        $this->assertStringContainsString('requires the Pro or Agency plan', $html);
+        $this->assertStringNotContainsString('réservée', $html);
+    }
+
+    public function test_a_malformed_success_is_unavailable_not_an_exception(): void
+    {
+        $this->fakeApi(['period' => ['from' => 'not a date']]);
+
+        $this->assertStringContainsString('The figures are unavailable right now.', $this->render());
+        $this->assertSame('unavailable', $this->app->make(DashboardStats::class)->read()['status']);
+    }
+
+    public function test_only_string_page_labels_are_kept(): void
+    {
+        Http::fake([
+            '*/summary*' => Http::response(['period' => ['from' => '2026-09-24', 'to' => '2026-10-23'], 'kpis' => [], 'previous' => []]),
+            '*/timeseries*' => Http::response(['data' => []]),
+            '*/breakdown*' => Http::response(['data' => [['label' => ['x' => 1], 'value' => 3], ['label' => null, 'value' => 2], ['label' => '/ok', 'value' => 1]]]),
+        ]);
+
+        $pages = $this->app->make(DashboardStats::class)->read()['pages'];
+
+        $this->assertSame([['label' => '/ok', 'value' => 1]], $pages);
+        $this->assertStringContainsString('/ok', $this->render());
+    }
+
+    public function test_the_token_is_never_sent_over_plain_http_except_to_localhost(): void
+    {
+        $this->fakeApi();
+        config()->set('quiet-metrics.endpoint', 'http://stats.example.test/api/v1/collect');
+
+        $this->assertStringContainsString('must use https', $this->render());
+        Http::assertNothingSent();
+
+        config()->set('quiet-metrics.endpoint', 'http://127.0.0.1:8000/api/v1/collect');
+        $this->assertStringContainsString('4,210', $this->render());
+    }
+
+    public function test_a_redirect_is_not_followed_with_the_token(): void
+    {
+        Http::fake([
+            'stats.example.test/*' => Http::response('', 302, ['Location' => 'https://elsewhere.example/steal']),
+            'elsewhere.example/*' => Http::response(['kpis' => []]),
+        ]);
+
+        $this->assertStringContainsString('The figures are unavailable right now.', $this->render());
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'elsewhere.example'));
     }
 
     public function test_without_a_read_token_nothing_is_requested(): void

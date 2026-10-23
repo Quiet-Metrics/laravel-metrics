@@ -162,6 +162,8 @@ Le pont répond depuis un middleware global, poussé par le provider seulement q
 
 Depuis la version 0.7.0, une application qui utilise Filament 4 ou 5 peut afficher les chiffres du site dans sa propre administration : visiteurs par jour cumulés, pages vues et sessions sur les 30 derniers jours avec leur évolution sur la période précédente, une tendance des visiteurs, les cinq pages les plus vues, et un lien « Ouvrir dans Quiet Metrics ». Filament est seulement suggéré, jamais exigé : sans lui, le pont fonctionne comme avant.
 
+L'API de lecture, donc le widget, est réservée aux plans Pro et Agence et à l'essai en cours : sur un autre plan, le widget indique que l'accès a été refusé.
+
 1. Dans Quiet Metrics, **Espace membre → Jetons API**, créez un jeton restreint à ce site. Il ne fait que lire les statistiques et reste distinct des clés de collecte : le révoquer n'arrête jamais la mesure.
 2. Ajoutez-le au `.env` :
 

@@ -14,14 +14,23 @@ use Throwable;
  *
  * Tout se passe côté serveur : le jeton de lecture vient de la configuration
  * et ne quitte jamais le serveur, ni dans la page ni dans la clé de cache.
- * Le résultat porte un `status` : `ok`, `not_configured`, `rejected` (jeton
- * refusé, expiré, ou qui ne couvre pas ce site) ou `unavailable`. Jamais le
- * corps d'une réponse en erreur : il n'a rien à faire dans un back-office.
+ * Le résultat porte un `status` : `ok`, `not_configured`, `insecure` (adresse
+ * du service hors https), `rejected` (401 ou 404 : jeton invalide, expiré,
+ * révoqué, ou clé publique d'un autre compte), `forbidden` (403 : plan sans
+ * l'API, compte fermé, ou site que le jeton ne couvre pas) ou `unavailable`.
+ * Jamais le corps d'une réponse en erreur : il n'a rien à faire dans un
+ * back-office.
  */
 final class DashboardStats
 {
     /** Dix minutes : l'API compte 120 requêtes par minute et par jeton. */
     public const CACHE_SECONDS = 600;
+
+    /**
+     * Un échec est gardé une minute : un service en panne ou un 429 ne doit
+     * pas coûter cinq secondes de délai à chaque affichage du tableau de bord.
+     */
+    public const FAILURE_CACHE_SECONDS = 60;
 
     public function __construct(private readonly Config $config, private readonly Cache $cache)
     {
@@ -39,6 +48,9 @@ final class DashboardStats
         if ($publicKey === '' || $token === '' || $origin === null) {
             return ['status' => 'not_configured'];
         }
+        if (! self::isSecure($origin)) {
+            return ['status' => 'insecure'];
+        }
 
         // Empreinte et non jeton en clair : un cache partagé ou un dump de
         // Redis ne doit pas suffire à le lire.
@@ -51,10 +63,7 @@ final class DashboardStats
 
         $result = $this->fetch($origin, $publicKey, $token, $period);
 
-        // Seul un succès est gardé : une erreur se retente au prochain affichage.
-        if ($result['status'] === 'ok') {
-            $this->cache->put($key, $result, self::CACHE_SECONDS);
-        }
+        $this->cache->put($key, $result, $result['status'] === 'ok' ? self::CACHE_SECONDS : self::FAILURE_CACHE_SECONDS);
 
         return $result;
     }
@@ -74,6 +83,17 @@ final class DashboardStats
     }
 
     /**
+     * Le jeton ne part jamais en clair : https obligatoire, sauf vers la
+     * machine elle-même (développement local).
+     */
+    public static function isSecure(string $origin): bool
+    {
+        $parts = parse_url($origin);
+
+        return ($parts['scheme'] ?? '') === 'https' || in_array($parts['host'] ?? '', ['localhost', '127.0.0.1'], true);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function fetch(string $origin, string $publicKey, string $token, string $period): array
@@ -88,14 +108,18 @@ final class DashboardStats
         $bodies = [];
         foreach ($queries as $endpoint => $query) {
             try {
-                $response = Http::withToken($token)->acceptJson()->connectTimeout(3)->timeout(5)
+                // Pas de redirection suivie : elle emporterait l'en-tête du jeton ailleurs.
+                $response = Http::withToken($token)->acceptJson()->withoutRedirecting()->connectTimeout(3)->timeout(5)
                     ->get($base.'/'.$endpoint, $query);
             } catch (Throwable) {
                 return ['status' => 'unavailable'];
             }
 
-            if (in_array($response->status(), [401, 403, 404], true)) {
+            if (in_array($response->status(), [401, 404], true)) {
                 return ['status' => 'rejected'];
+            }
+            if ($response->status() === 403) {
+                return ['status' => 'forbidden'];
             }
             $body = $response->json();
             if (! $response->successful() || ! is_array($body)) {
@@ -115,6 +139,13 @@ final class DashboardStats
      */
     private function shape(array $summary, array $timeseries, array $breakdown, string $origin): array
     {
+        // Une réponse 200 malformée vaut une panne, pas une exception de vue.
+        $from = $summary['period']['from'] ?? null;
+        $to = $summary['period']['to'] ?? null;
+        if (! self::isDate($from) || ! self::isDate($to)) {
+            return ['status' => 'unavailable'];
+        }
+
         // Une fenêtre précédente non mesurée n'est pas une base de comparaison
         // (docs de l'API, `comparison.measured`).
         $measured = ($summary['comparison']['measured'] ?? true) !== false;
@@ -131,19 +162,27 @@ final class DashboardStats
 
         $pages = [];
         foreach ((array) ($breakdown['data'] ?? []) as $row) {
-            $pages[] = ['label' => $row['label'] ?? null, 'value' => (int) ($row['value'] ?? 0)];
+            if (is_string($row['label'] ?? null)) {
+                $pages[] = ['label' => $row['label'], 'value' => (int) ($row['value'] ?? 0)];
+            }
         }
 
         return [
             'status' => 'ok',
-            'from' => (string) ($summary['period']['from'] ?? ''),
-            'to' => (string) ($summary['period']['to'] ?? ''),
+            'from' => $from,
+            'to' => $to,
             'kpis' => $kpis,
             'trend' => array_map(static fn ($point): int => (int) ($point['visitors'] ?? 0), (array) ($timeseries['data'] ?? [])),
             'pages' => $pages,
             'capped' => (bool) ($breakdown['capped']['any'] ?? false),
             'url' => $origin.'/app',
         ];
+    }
+
+    private static function isDate(mixed $value): bool
+    {
+        return is_string($value) && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $m) === 1
+            && checkdate((int) $m[2], (int) $m[3], (int) $m[1]);
     }
 
     /**

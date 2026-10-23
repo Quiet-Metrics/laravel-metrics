@@ -8,6 +8,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning: [S
 ### Added
 - **Optional Filament dashboard widget**, `QuietMetrics\Laravel\Filament\QuietMetricsWidget`, for Filament 4 or 5: daily visitors (summed), page views and sessions over the last 30 days with their change on the previous period, a visitors trend, the five most viewed pages, and a link to Quiet Metrics. Read server side from the read API with a new `read_token` key (`QUIET_METRICS_READ_TOKEN`), a token restricted to the site and separate from the collection keys. Responses are cached ten minutes under a hashed key; errors show a neutral message. English and French translations.
 - `filament/filament` is suggested, not required: without Filament, nothing changes.
+- The widget tells an invalid or expired token (401) from a refusal (403: the read API requires the Pro or Agency plan or an ongoing trial, and the token must cover the site). It only sends the token over https (localhost excepted), never follows a redirect, keeps a failure one minute so a down service does not slow every dashboard load, and treats a malformed response as unavailable.
 
 ## [0.6.0] - 2026-09-28
 

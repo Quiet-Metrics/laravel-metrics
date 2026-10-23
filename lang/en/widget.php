@@ -20,6 +20,8 @@ return [
     'capped' => 'Beyond the daily cap, the least viewed pages are grouped on one line: no visit is lost.',
     'open' => 'Open in Quiet Metrics',
     'not_configured' => 'Set QUIET_METRICS_PUBLIC_KEY and QUIET_METRICS_READ_TOKEN to show the figures of your site.',
-    'rejected' => 'Quiet Metrics refused the request: check that the read token is still valid and covers this site.',
+    'insecure' => 'The Quiet Metrics address must use https: the read token is never sent over an unencrypted connection.',
+    'rejected' => 'Quiet Metrics did not accept the read token: check that it is still valid (not expired, not revoked) and that the public key is this site\'s.',
+    'forbidden' => 'Quiet Metrics refused access: the read API requires the Pro or Agency plan (or an ongoing trial), and the token must cover this site.',
     'unavailable' => 'The figures are unavailable right now. Try again in a few minutes.',
 ];

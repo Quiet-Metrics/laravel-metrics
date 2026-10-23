@@ -162,6 +162,8 @@ The bridge answers from a global middleware, pushed by the provider only when th
 
 From version 0.7.0, an application that uses Filament 4 or 5 can show the site's figures in its own admin: daily visitors (summed), page views and sessions over the last 30 days with their change on the previous period, a visitors trend, the five most viewed pages, and a link "Open in Quiet Metrics". Filament is only suggested, never required: without it the bridge works as before.
 
+The read API, and so the widget, is reserved for the Pro and Agency plans and ongoing trials: on another plan, the widget says that access was refused.
+
 1. In Quiet Metrics, **Dashboard → API tokens**, create a token restricted to this site. It only reads statistics and is separate from the collection keys: revoking it never stops measurement.
 2. Add it to `.env`:
 
