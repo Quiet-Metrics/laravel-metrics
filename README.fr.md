@@ -6,7 +6,7 @@
 
 Pont Laravel de [Quiet Metrics](https://quietmetrics.dev) (QuietSystems) : pageviews serveur automatiques via middleware, facade pour les événements, configuration publiable. Le tracking se fait à 100 % côté serveur, sans JS et sans cookie d'identification ni de traçabilité, invisible pour les adblockers. Repose sur le [package cœur PHP](https://github.com/Quiet-Metrics/php-metrics) (`quiet-metrics/php-metrics`).
 
-Compatible Laravel 10 à 13 (illuminate/support ^10 || ^11 || ^12 || ^13), PHP >= 8.3.
+Compatible Laravel 12 et 13 (illuminate/support ^12 || ^13), PHP >= 8.3.
 
 ## Installation
 
@@ -21,7 +21,7 @@ Le service provider et l'alias de facade sont enregistrés automatiquement (pack
 Chaque version mineure 0.x du pont exige la version mineure correspondante du SDK cœur `quiet-metrics/php-metrics` : montez les deux ensemble, et eux seuls.
 
 ```bash
-composer require quiet-metrics/laravel-metrics:^0.6 --no-update
+composer require quiet-metrics/laravel-metrics:^0.7 --no-update
 composer update quiet-metrics/laravel-metrics quiet-metrics/php-metrics
 ```
 
@@ -63,7 +63,7 @@ Route::middleware('quiet-metrics')->group(function () {
 });
 ```
 
-En global sur tout le groupe web, Laravel 11+ (`bootstrap/app.php`) :
+En global sur tout le groupe web (`bootstrap/app.php`) :
 
 ```php
 use QuietMetrics\Laravel\Middleware\TrackPageview;
@@ -73,20 +73,9 @@ use QuietMetrics\Laravel\Middleware\TrackPageview;
 })
 ```
 
-Laravel 10 (`app/Http/Kernel.php`) :
-
-```php
-protected $middlewareGroups = [
-    'web' => [
-        // ...
-        \QuietMetrics\Laravel\Middleware\TrackPageview::class,
-    ],
-];
-```
-
 Les pages vues automatiques sont les documents HTML/XHTML affichés en réponse à un `GET`, y compris les erreurs 404/500 levées par une route de votre application (`abort(404)`, modèle introuvable). Les redirections, réponses vides (204/205), PDF, JSON et pièces jointes sont exclus, ainsi que l’AJAX, les préchargements annoncés et les visiteurs exclus.
 
-**Les adresses qui ne correspondent à aucune route ne sont pas mesurées** par l'intégration dans le groupe `web` : quand aucune route ne correspond, Laravel n'exécute aucun middleware de groupe. Ces 404 comprennent les liens cassés et les anciennes adresses, mais aussi la plupart des requêtes de robots qui sondent les sites (`/wp-login.php`, `/.env`). Pour les mesurer quand même, déclarez le middleware dans la pile globale, **à la place** du groupe `web` : `$middleware->append(TrackPageview::class)` en Laravel 11+, le tableau `$middleware` de `app/Http/Kernel.php` en Laravel 10. La pile globale couvre aussi les routes hors du groupe `web`, comme un panneau d'administration : écartez-les avec les chemins exclus dans les réglages du site. Ne déclarez pas le middleware aux deux endroits, sinon chaque page serait comptée deux fois.
+**Les adresses qui ne correspondent à aucune route ne sont pas mesurées** par l'intégration dans le groupe `web` : quand aucune route ne correspond, Laravel n'exécute aucun middleware de groupe. Ces 404 comprennent les liens cassés et les anciennes adresses, mais aussi la plupart des requêtes de robots qui sondent les sites (`/wp-login.php`, `/.env`). Pour les mesurer quand même, déclarez le middleware dans la pile globale, **à la place** du groupe `web` : `$middleware->append(TrackPageview::class)` dans `bootstrap/app.php`. La pile globale couvre aussi les routes hors du groupe `web`, comme un panneau d'administration : écartez-les avec les chemins exclus dans les réglages du site. Ne déclarez pas le middleware aux deux endroits, sinon chaque page serait comptée deux fois.
 
 À partir de la version **0.4.0**, `'track_404' => true` active en plus un événement `404` avec le chemin de la page, sur les seules 404 que le middleware voit. Cette option est désactivée par défaut : chaque événement supplémentaire consomme le quota. Activez-la côté serveur ou via `data-404` dans le script sur une même page, pour éviter un double événement. Le suivi ne voit pas les pages servies par un cache qui contourne PHP.
 
