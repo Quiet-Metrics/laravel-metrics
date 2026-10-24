@@ -23,8 +23,8 @@
         "server-side"
     ],
     "require": {
-        "php": ">=8.1",
-        "quiet-metrics/php-metrics": "^0.6",
+        "php": ">=8.3",
+        "quiet-metrics/php-metrics": "^0.7",
         "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0"
     },
     "suggest": {
@@ -56,7 +56,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "quiet-metrics/php-metrics": "0.6.x-dev"
+                    "quiet-metrics/php-metrics": "0.7.x-dev"
                 }
             }
         }
